@@ -3,108 +3,117 @@
 #include <ctype.h>
 #include <string.h>
 
+// Token Types
 typedef enum {
-    SEMI,
-    OPEN_PAREN,
-    CLOSE_PAREN,
-} TypeSeperator;
+    SEMI,        // ;
+    OPEN_PAREN,  // (
+    CLOSE_PAREN, // )
+    INT,         // Numbers
+    KEYWORD      // Keywords like "exit"
+} TokenType;
 
-typedef enum {
-    EXIT,
-} TypeKeyword;
-
-typedef enum {
-    INT, 
-} TypeLiteral;
-
+// Token Structure
 typedef struct {
-    TypeKeyword type;
-} TokenKeyword;
-
-typedef struct {
-    TypeSeperator type;
-} TokenSeperator;
-
-typedef struct {
-    TypeLiteral type;
+    TokenType type;
     char *value;
-} TokenLiteral;
+} Token;
 
-TokenLiteral *generate_number(char current, FILE *file){
-    TokenLiteral *token = malloc(sizeof(TokenLiteral));
+// Function to create tokens for numbers
+Token *generate_number(const char *input, int *index) {
+    Token *token = malloc(sizeof(Token));
     token->type = INT;
-    char *value = malloc(sizeof(char) * 8);
+
+    // Allocate memory for the number
+    char *value = malloc(sizeof(char) * 16); // Max 15 digits + null terminator
     int value_index = 0;
-    
-    while(isdigit(current) && current != EOF){
-        if(!isdigit(current)){
-            break;
-        }
-        value[value_index] = current;
-        value_index++;
-        current = fgetc(file);
+
+    // Collect digits
+    while (isdigit(input[*index])) {
+        value[value_index++] = input[*index];
+        (*index)++;
     }
 
-    value[value_index] = '\0';
-    token->value = value; 
+    value[value_index] = '\0'; // Null-terminate the string
+    token->value = value;
     return token;
 }
 
-TokenKeyword *generate_keyword(char current, FILE *file){
-    TokenKeyword *token = malloc(sizeof(TokenKeyword));
-    char *keyword = malloc(sizeof(char) * 4);
-    int keyword_index = 0;
+// Function to create tokens for keywords
+Token *generate_keyword(const char *input, int *index) {
+    Token *token = malloc(sizeof(Token));
+    token->type = KEYWORD;
 
-    while(isalpha(current) && current != EOF){
-        keyword[keyword_index] = current;
-        current = fgetc(file);
+    // Allocate memory for the keyword
+    char *value = malloc(sizeof(char) * 16); // Max 15 characters + null terminator
+    int value_index = 0;
+
+    // Collect alphabetic characters
+    while (isalpha(input[*index])) {
+        value[value_index++] = input[*index];
+        (*index)++;
     }
 
-    char keyword_str[keyword_index];
-    for(int i = 0; i < keyword_index; i++){
-        keyword_str[i] = keyword[i];
-    }
+    value[value_index] = '\0'; // Null-terminate the string
+    token->value = value;
 
-    if(strcmp(keyword, "exit")){
-        token->type = EXIT;
-    }
-
+    // Check if the keyword matches "exit"
+    //if (strcmp(value, "exit") == 0) {
+    //    printf("FOUND KEYWORD: exit\n");
+    //}
     return token;
 }
 
-void lexer(FILE *file){
-    char current = fgetc(file);
-    
-    while(current != EOF){
-        if(current == ';'){
+// Main Lexical Analyzer Function
+void lexer(const char *input) {
+    int index = 0;
+
+    while (input[index] != '\0') {
+        if (input[index] == ';') {
             printf("FOUND SEMICOLON\n");
-        }
-        else if(current == '('){
+            index++;
+        } else if (input[index] == '(') {
             printf("FOUND OPEN PAREN\n");
-        }
-        else if(current == ')'){
+            index++;
+        } else if (input[index] == ')') {
             printf("FOUND CLOSE PAREN\n");
-        }
-        else if(isdigit(current)){
-            TokenLiteral *test_token = generate_number(current, file);
-            printf("TEST TOKEN VALUE: %s\n", test_token->value);\
+            index++;
+        } else if (isdigit(input[index])) {
+            Token *number_token = generate_number(input, &index);
+            printf("FOUND NUMBER: %s\n", number_token->value);
 
-            free(test_token->value);
-            free(test_token);
+            free(number_token->value); // Free memory
+            free(number_token);
+        } else if (isalpha(input[index])) {
+            Token *keyword_token = generate_keyword(input, &index);
+            printf("FOUND KEYWORD: %s\n", keyword_token->value);
 
-            //printf("FOUND DIGIT: %d\n", current - '0');
+            free(keyword_token->value); // Free memory
+            free(keyword_token);
+        } else {
+            index++; // Skip unknown characters
         }
-        else if(isalpha(current)){
-            TokenKeyword *test_keyword = generate_keyword(current, file);
-            
-            //printf("FOUND CHARACTER: %C\n", current);
-        }
-        current = fgetc(file);
     }
 }
 
 int main() {
-    FILE *file;
-    file = fopen("test.unn", "r");
-    lexer(file);
+    FILE *file = fopen("test.unn", "r");
+    if (!file) {
+        perror("Error opening file");
+        return 1;
+    }
+
+    // Read file into a buffer
+    fseek(file, 0, SEEK_END);
+    int length = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    char *buffer = malloc(length + 1);
+    fread(buffer, 1, length, file);
+    fclose(file);
+
+    buffer[length] = '\0'; // Null-terminate the input
+    lexer(buffer);
+
+    free(buffer); // Free the buffer memory
+    return 0;
 }
