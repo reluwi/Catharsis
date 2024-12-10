@@ -3,13 +3,14 @@
 #include <ctype.h>
 #include <string.h>
 
-// Token Types
+// Token Types (add more like for '=' and others)
 typedef enum {
     SEMI,        // ;
     OPEN_PAREN,  // (
     CLOSE_PAREN, // )
     INT,         // Numbers
-    KEYWORD      // Keywords like "exit"
+    KEYWORD,      // Keywords like "exit"
+    IDENTIFIER
 } TokenType;
 
 // Token Structure
@@ -17,6 +18,20 @@ typedef struct {
     TokenType type;
     char *value;
 } Token;
+
+//list of valid keywords (add more)
+const char *keywords[] = {"int", "float", "double", "char", "bool", "string"};
+const int keyword_count = sizeof(keywords) / sizeof(keywords[0]);
+
+//check if the word is a keyword
+int is_keyword(const char *word){
+    for(int i = 0; i < keyword_count; i++){
+        if(strcmp(word, keywords[i]) == 0){
+            return 1;
+        }
+    }
+    return 0;
+}
 
 // Function to create tokens for numbers
 Token *generate_number(const char *input, int *index) {
@@ -39,27 +54,42 @@ Token *generate_number(const char *input, int *index) {
 }
 
 // Function to create tokens for keywords
-Token *generate_keyword(const char *input, int *index) {
+Token *generate_keyword(const char *word) {
     Token *token = malloc(sizeof(Token));
     token->type = KEYWORD;
+    token->value = strdup(word); // Duplicate the word for the token
+    return token;
+}
 
-    // Allocate memory for the keyword
-    char *value = malloc(sizeof(char) * 16); // Max 15 characters + null terminator
-    int value_index = 0;
+// Function to create tokens for identifiers
+Token *generate_identifier(const char *word) {
+    Token *token = malloc(sizeof(Token));
+    token->type = IDENTIFIER;
+    token->value = strdup(word); // Duplicate the word for the token
+    return token;
+}
+
+// Function to process words (keywords or identifiers)
+Token *process_word(const char *input, int *index) {
+    char *word = malloc(sizeof(char) * 16); // Max 15 characters + null terminator
+    int word_index = 0;
 
     // Collect alphabetic characters
     while (isalpha(input[*index])) {
-        value[value_index++] = input[*index];
+        word[word_index++] = input[*index];
         (*index)++;
     }
 
-    value[value_index] = '\0'; // Null-terminate the string
-    token->value = value;
+    word[word_index] = '\0'; // Null-terminate the string
 
-    // Check if the keyword matches "exit"
-    //if (strcmp(value, "exit") == 0) {
-    //    printf("FOUND KEYWORD: exit\n");
-    //}
+    Token *token;
+    if (is_keyword(word)) {
+        token = generate_keyword(word);
+    } else {
+        token = generate_identifier(word);
+    }
+
+    free(word); // Free the temporary word buffer
     return token;
 }
 
@@ -84,11 +114,15 @@ void lexer(const char *input) {
             free(number_token->value); // Free memory
             free(number_token);
         } else if (isalpha(input[index])) {
-            Token *keyword_token = generate_keyword(input, &index);
-            printf("FOUND KEYWORD: %s\n", keyword_token->value);
+            Token *word_token = process_word(input, &index);
+            if (word_token->type == KEYWORD) {
+                printf("FOUND KEYWORD: %s\n", word_token->value);
+            } else if (word_token->type == IDENTIFIER) {
+                printf("FOUND IDENTIFIER: %s\n", word_token->value);
+            }
 
-            free(keyword_token->value); // Free memory
-            free(keyword_token);
+            free(word_token->value);
+            free(word_token);
         } else {
             index++; // Skip unknown characters
         }
