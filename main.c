@@ -3,14 +3,16 @@
 #include <ctype.h>
 #include <string.h>
 
-// Token Types (add more like for '=' and others)
+// Token Types (add more like for '{}' and others)
 typedef enum {
     SEMI,        // ;
     OPEN_PAREN,  // (
     CLOSE_PAREN, // )
+    EQUAL,
     INT,         // Numbers
     KEYWORD,      // Keywords like "exit"
-    IDENTIFIER
+    IDENTIFIER,
+    INVALID_IDENTIFIER
 } TokenType;
 
 // Token Structure
@@ -20,11 +22,11 @@ typedef struct {
 } Token;
 
 //list of valid keywords (add more)
-const char *keywords[] = {"int", "float", "double", "char", "bool", "string"};
+const char *keywords[] = {"int", "float", "double", "char", "bool", "string", "exit"};
 const int keyword_count = sizeof(keywords) / sizeof(keywords[0]);
 
 //check if the word is a keyword
-int is_keyword(const char *word){
+int is_keyword(const char *word) {
     for(int i = 0; i < keyword_count; i++){
         if(strcmp(word, keywords[i]) == 0){
             return 1;
@@ -65,7 +67,15 @@ Token *generate_keyword(const char *word) {
 Token *generate_identifier(const char *word) {
     Token *token = malloc(sizeof(Token));
     token->type = IDENTIFIER;
-    token->value = strdup(word); // Duplicate the word for the token
+    token->value = strdup(word); 
+    return token;
+}
+
+// Function to create token for invalid identifiers
+Token *generate_invalid_identifier(const char *word) {
+    Token *token = malloc(sizeof(Token));
+    token->type = INVALID_IDENTIFIER;
+    token->value = strdup(word); 
     return token;
 }
 
@@ -74,8 +84,21 @@ Token *process_word(const char *input, int *index) {
     char *word = malloc(sizeof(char) * 16); // Max 15 characters + null terminator
     int word_index = 0;
 
-    // Collect alphabetic characters
-    while (isalpha(input[*index])) {
+    // Collect identifier starting with number
+    if (isdigit(input[*index])) {
+        while (isalnum(input[*index])) {
+            word[word_index++] = input[*index];
+            (*index)++;
+        }
+        word[word_index] = '\0';
+        Token *invalid_token = generate_invalid_identifier(word);
+        
+        free(word);
+        return invalid_token;
+    }
+    
+    //otherwise, collect valid identifier
+    while (isalnum(input[*index])) {
         word[word_index++] = input[*index];
         (*index)++;
     }
@@ -86,7 +109,11 @@ Token *process_word(const char *input, int *index) {
     if (is_keyword(word)) {
         token = generate_keyword(word);
     } else {
-        token = generate_identifier(word);
+        if(isdigit(word[0])) {
+            token = generate_invalid_identifier(word);
+        } else {
+            token = generate_identifier(word);
+        }
     }
 
     free(word); // Free the temporary word buffer
@@ -107,18 +134,36 @@ void lexer(const char *input) {
         } else if (input[index] == ')') {
             printf("FOUND CLOSE PAREN\n");
             index++;
+        } else if (input[index] == '=') {
+            printf("FOUND EQUAL\n");
+            index++;
         } else if (isdigit(input[index])) {
-            Token *number_token = generate_number(input, &index);
-            printf("FOUND NUMBER: %s\n", number_token->value);
+            int temp_index = index;
+            while (isdigit(input[temp_index])) {
+                temp_index++;
+            }
 
-            free(number_token->value); // Free memory
-            free(number_token);
-        } else if (isalpha(input[index])) {
+            if(isalpha(input[temp_index])) {
+                Token *invalid_token = process_word(input, &index);
+                printf("FOUND INVALID_IDENTIFIER: %s\n", invalid_token->value);
+
+                free(invalid_token->value);
+                free(invalid_token);
+            } else {
+                Token *number_token = generate_number(input, &index);
+                printf("FOUND NUMBER: %s\n", number_token->value);
+
+                free(number_token->value); // Free memory
+                free(number_token);
+            }    
+        } else if (isalnum(input[index])) {
             Token *word_token = process_word(input, &index);
             if (word_token->type == KEYWORD) {
                 printf("FOUND KEYWORD: %s\n", word_token->value);
             } else if (word_token->type == IDENTIFIER) {
                 printf("FOUND IDENTIFIER: %s\n", word_token->value);
+            } else if (word_token->type == INVALID_IDENTIFIER) {
+                printf("FOUND INVALID_IDENTIFIER: %s\n", word_token->value);
             }
 
             free(word_token->value);
