@@ -1,3 +1,5 @@
-int 3human = 5;
+int val = 5;
 
-float num = 30;
+char 1one = 3;
+
+bool two = 1;
