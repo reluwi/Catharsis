@@ -22,7 +22,7 @@ class Token:
         return f"Token({self.token_type}, {repr(self.value)})"
     
 KEYWORDS = ["int", "float", "double", "char", "bool", "string", "exit"]
-ARITH_OPS = ["+", "-", "*", "/", "%", "^"]
+ARITH_OPS = ["+", "-", "*", "/", "%", "^", "#"]
 
 # check if a word is a keyword
 def is_keyword(word):
