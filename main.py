@@ -6,6 +6,7 @@ class TokenType(Enum):
     OPEN_PAREN = "OPEN_PAREN" # (
     CLOSE_PAREN = "CLOSE_PAREN" # )
     EQUAL = "EQUAL" # =
+    ASSIGNMENT_OP = "ASSIGNMENT_OP"
     INT = "INT" 
     KEYWORD = "KEYWORD"
     IDENTIFIER = "IDENTIFIER"
@@ -23,6 +24,7 @@ class Token:
     
 KEYWORDS = ["int", "float", "double", "char", "bool", "string", "exit"]
 ARITH_OPS = ["+", "-", "*", "/", "%", "^", "#"]
+ASSIGN_OPS = ["=", "+=", "-=", "*=", "/=", "%="]
 
 # check if a word is a keyword
 def is_keyword(word):
@@ -77,6 +79,13 @@ def process_arith_op(char):
         return {"type": "ARITHMETIC_OP", "value": char}
     return None
 
+# process an assignment operator
+def process_assignment_operator(input_text, index):
+    for op in ASSIGN_OPS:
+        if input_text.startswith(op, index):
+            return {'type': "ASSIGNMENT_OP", 'value': op}, index + len(op)
+    return None, index
+
 # main lexer function    
 def lexer(input_text):
     index = 0
@@ -101,9 +110,12 @@ def lexer(input_text):
         elif char == ")":
             tokens.append({"type": "CLOSE_PAREN", "value": ")"})
             index += 1
-        elif char == "=":
-            tokens.append({"type": "EQUAL", "value": "="})
-            index += 1
+
+        # Handle assignment operators
+        elif any(input_text.startswith(op, index) for op in ASSIGN_OPS):
+            token, new_index = process_assignment_operator(input_text, index)
+            tokens.append(token)
+            index = new_index
 
         # process arithmetic operators
         elif char in ARITH_OPS:
