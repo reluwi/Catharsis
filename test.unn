@@ -1,5 +1,5 @@
 int val = 5;
 
-char 1one = 3;
+int sum = 1 + 2;
 
-bool two = 1;
+int div = 10/3:

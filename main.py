@@ -10,6 +10,7 @@ class TokenType(Enum):
     KEYWORD = "KEYWORD"
     IDENTIFIER = "IDENTIFIER"
     INVALID_IDENTIFIER = "INVALID_IDENTIFIER"
+    ARITHMETIC_OP = "ARITHMETIC_OP"
 
 # define the token class
 class Token:
@@ -21,10 +22,15 @@ class Token:
         return f"Token({self.token_type}, {repr(self.value)})"
     
 KEYWORDS = ["int", "float", "double", "char", "bool", "string", "exit"]
+ARITH_OPS = ["+", "-", "*", "/", "%", "^"]
 
 # check if a word is a keyword
 def is_keyword(word):
     return word in KEYWORDS
+
+#check if a char if arith_ops
+def is_arith_op(word):
+    return word in ARITH_OPS 
 
 # generate a token for a number
 def generate_number(value):
@@ -42,7 +48,7 @@ def generate_identifier(value):
 def generate_invalid_identifier(value):
     return {"type": "INVALID_IDENTIFIER", "value": value}
 
-# Function to process a number
+# process a number
 def process_number(input_text, index):
     start_index = index
     while index < len(input_text) and input_text[index].isdigit():
@@ -57,7 +63,7 @@ def process_word(input_text, index):
         index += 1
     word_value = input_text[start_index:index]
 
-    # Determine if the word is a keyword, identifier, or invalid
+    # Determine if the word is a keyword, identifier, arith_op, or invalid
     if is_keyword(word_value):
         return generate_keyword(word_value), index
     elif word_value[0].isdigit():
@@ -65,6 +71,13 @@ def process_word(input_text, index):
     else:
         return generate_identifier(word_value), index
     
+# prcoess an arithmetic operator
+def process_arith_op(char):
+    if char in ARITH_OPS:
+        return {"type": "ARITHMETIC_OP", "value": char}
+    return None
+
+# main lexer function    
 def lexer(input_text):
     index = 0
     tokens = []
@@ -90,6 +103,11 @@ def lexer(input_text):
             index += 1
         elif char == "=":
             tokens.append({"type": "EQUAL", "value": "="})
+            index += 1
+
+        # process arithmetic operators
+        elif char in ARITH_OPS:
+            tokens.append(process_arith_op(char))
             index += 1
 
         # Process numbers
