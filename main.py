@@ -2,16 +2,14 @@ from enum import Enum
 import string
 
 class TokenType(Enum):
-    SEMI = "SEMI" # ;
-    OPEN_PAREN = "OPEN_PAREN" # (
-    CLOSE_PAREN = "CLOSE_PAREN" # )
     ASSIGNMENT_OP = "ASSIGNMENT_OP"
     INT = "INT" 
     KEYWORD = "KEYWORD"
     IDENTIFIER = "IDENTIFIER"
     INVALID_IDENTIFIER = "INVALID_IDENTIFIER"
     ARITHMETIC_OP = "ARITHMETIC_OP"
-    DELIMITERS = "DELIMITERS"
+    DELIMITER = "DELIMITER"
+    UNARY_OP = "UNARY_OP"
 
 # define the token class
 class Token:
@@ -23,9 +21,10 @@ class Token:
         return f"Token({self.token_type}, {repr(self.value)})"
     
 KEYWORDS = ["int", "float", "double", "char", "bool", "string", "exit"]
-ARITH_OPS = ["+", "-", "*", "/", "%", "^", "#"]
+ARITH_OPS = ["*", "/", "%", "^", "#"]
 ASSIGN_OPS = ["=", "+=", "-=", "*=", "/=", "%="]
 DELI = [";", "(", ")", "[", "]", "{", "}", ","]
+UN_OPS = ["+", "-", "++", "--"]
 
 # check if a word is a keyword
 def is_keyword(word):
@@ -79,18 +78,35 @@ def process_deli(char):
     if char in DELI:
         return {"type": "DELIMITER", "value": char}
     return None
-    
-# prcoess an arithmetic operator
-def process_arith_op(char):
-    if char in ARITH_OPS:
-        return {"type": "ARITHMETIC_OP", "value": char}
-    return None
 
 # process an assignment operator
 def process_assignment_operator(input_text, index):
     for op in ASSIGN_OPS:
         if input_text.startswith(op, index):
-            return {'type': "ASSIGNMENT_OP", 'value': op}, index + len(op)
+            return {"type": "ASSIGNMENT_OP", 'value': op}, index + len(op)
+    return None, index
+
+# Process unary and arithmetic operators
+def process_un_arith_op(input_text, index, previous_token):
+    # Check for "++" and "--"
+    if input_text.startswith("++", index):
+        return {"type": "UNARY_OP", "value": "++"}, index + 2
+    elif input_text.startswith("--", index):
+        return {"type": "UNARY_OP", "value": "--"}, index + 2
+
+    # Check for unary "+" or "-"
+    elif input_text[index] in ["+", "-"]:
+        # Determine if it should be treated as a unary operator
+        if previous_token and previous_token["type"] in ["DELIMITER", "ASSIGNMENT_OP"]:
+            return {"type": "UNARY_OP", "value": input_text[index]}, index + 1
+        else:
+            # Otherwise, treat it as an arithmetic operator
+            return {"type": "ARITHMETIC_OP", "value": input_text[index]}, index + 1
+
+    # check for other arithmetic op
+    elif input_text[index] in ARITH_OPS:
+        return {"type": "ARITHMETIC_OP", "value": input_text[index]}, index + 1
+
     return None, index
 
 # main lexer function    
@@ -98,6 +114,7 @@ def lexer(input_text):
     index = 0
     tokens = []
     length = len(input_text)
+    previous_token = None
 
     while index < len(input_text):
         char = input_text[index]
@@ -111,19 +128,25 @@ def lexer(input_text):
         delimiter_token = process_deli(char)
         if delimiter_token:
             tokens.append(delimiter_token)
+            previous_token = delimiter_token  # Update previous_token
             index += 1
+            continue
+        
+        # Handle unary and arithmetic operators
+        un_op_token, new_index = process_un_arith_op(input_text, index, previous_token)
+        if un_op_token:
+            tokens.append(un_op_token)
+            previous_token = un_op_token
+            index = new_index
             continue
 
         # Handle assignment operators
         elif any(input_text.startswith(op, index) for op in ASSIGN_OPS):
             token, new_index = process_assignment_operator(input_text, index)
             tokens.append(token)
+            previous_token = token  # Update previous_token
             index = new_index
-
-        # process arithmetic operators
-        elif char in ARITH_OPS:
-            tokens.append(process_arith_op(char))
-            index += 1
+            continue
 
         # Process numbers
         elif char.isdigit():
@@ -134,16 +157,21 @@ def lexer(input_text):
             token_value = input_text[index:temp_index]
             
             if any(c.isalpha() for c in token_value):  # Check if it contains letters
-                tokens.append({'type': 'INVALID_IDENTIFIER', 'value': token_value})
+                token = ({"type": "INVALID_IDENTIFIER", "value": token_value})
             else:
-                tokens.append({'type': 'NUMBER', 'value': token_value})
+                token = ({"type": "NUMBER", "value": token_value})
 
+            tokens.append(token)
+            previous_token = token
             index = temp_index
+            continue
 
         # Process words (keywords, identifiers, or invalid identifiers)
         elif char.isalpha() or char == "_":
             token, index = process_word(input_text, index)
             tokens.append(token)
+            previous_token = token
+            continue
 
         # Handle unrecognized characters
         else:
