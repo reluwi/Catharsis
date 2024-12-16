@@ -5,13 +5,13 @@ class TokenType(Enum):
     SEMI = "SEMI" # ;
     OPEN_PAREN = "OPEN_PAREN" # (
     CLOSE_PAREN = "CLOSE_PAREN" # )
-    EQUAL = "EQUAL" # =
     ASSIGNMENT_OP = "ASSIGNMENT_OP"
     INT = "INT" 
     KEYWORD = "KEYWORD"
     IDENTIFIER = "IDENTIFIER"
     INVALID_IDENTIFIER = "INVALID_IDENTIFIER"
     ARITHMETIC_OP = "ARITHMETIC_OP"
+    DELIMITERS = "DELIMITERS"
 
 # define the token class
 class Token:
@@ -25,6 +25,7 @@ class Token:
 KEYWORDS = ["int", "float", "double", "char", "bool", "string", "exit"]
 ARITH_OPS = ["+", "-", "*", "/", "%", "^", "#"]
 ASSIGN_OPS = ["=", "+=", "-=", "*=", "/=", "%="]
+DELI = [";", "(", ")", "[", "]", "{", "}", ","]
 
 # check if a word is a keyword
 def is_keyword(word):
@@ -73,6 +74,12 @@ def process_word(input_text, index):
     else:
         return generate_identifier(word_value), index
     
+# Process a delimiter
+def process_deli(char):
+    if char in DELI:
+        return {"type": "DELIMITER", "value": char}
+    return None
+    
 # prcoess an arithmetic operator
 def process_arith_op(char):
     if char in ARITH_OPS:
@@ -100,16 +107,12 @@ def lexer(input_text):
             index += 1
             continue
         
-        # Process other single-character tokens (e.g., symbols)
-        elif char == ";":
-            tokens.append({"type": "SEMI", "value": ";"})
+        # Handle delimiters
+        delimiter_token = process_deli(char)
+        if delimiter_token:
+            tokens.append(delimiter_token)
             index += 1
-        elif char == "(":
-            tokens.append({"type": "OPEN_PAREN", "value": "("})
-            index += 1
-        elif char == ")":
-            tokens.append({"type": "CLOSE_PAREN", "value": ")"})
-            index += 1
+            continue
 
         # Handle assignment operators
         elif any(input_text.startswith(op, index) for op in ASSIGN_OPS):
