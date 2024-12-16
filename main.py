@@ -10,6 +10,7 @@ class TokenType(Enum):
     ARITHMETIC_OP = "ARITHMETIC_OP"
     DELIMITER = "DELIMITER"
     UNARY_OP = "UNARY_OP"
+    LOGICAL_OP = "LOGICAL_OP" 
 
 # define the token class
 class Token:
@@ -22,17 +23,11 @@ class Token:
     
 KEYWORDS = ["int", "float", "double", "char", "bool", "string", "exit"]
 ARITH_OPS = ["*", "/", "%", "^", "#"]
-ASSIGN_OPS = ["=", "+=", "-=", "*=", "/=", "%="]
 DELI = [";", "(", ")", "[", "]", "{", "}", ","]
-UN_OPS = ["+", "-", "++", "--"]
 
 # check if a word is a keyword
 def is_keyword(word):
     return word in KEYWORDS
-
-#check if a char if arith_ops
-def is_arith_op(word):
-    return word in ARITH_OPS 
 
 # generate a token for a number
 def generate_number(value):
@@ -79,25 +74,38 @@ def process_deli(char):
         return {"type": "DELIMITER", "value": char}
     return None
 
-# process an assignment operator
-def process_assignment_operator(input_text, index):
-    for op in ASSIGN_OPS:
-        if input_text.startswith(op, index):
-            return {"type": "ASSIGNMENT_OP", 'value': op}, index + len(op)
-    return None, index
-
 # Process unary and arithmetic operators
-def process_un_arith_op(input_text, index, previous_token):
+def process_operator(input_text, index, previous_token):
     # Check for "++" and "--"
     if input_text.startswith("++", index):
         return {"type": "UNARY_OP", "value": "++"}, index + 2
     elif input_text.startswith("--", index):
         return {"type": "UNARY_OP", "value": "--"}, index + 2
+    
+    # Check for assignment operators
+    elif input_text.startswith("=", index):
+        return {"type": "ASSIGNMENT_OP", "value": "="}, index + 1
+    elif input_text.startswith("+=", index):
+        return {"type": "ASSIGNMENT_OP", "value": "+="}, index + 2
+    elif input_text.startswith("-=", index):
+        return {"type": "ASSIGNMENT_OP", "value": "-="}, index + 2
+    elif input_text.startswith("*=", index):
+        return {"type": "ASSIGNMENT_OP", "value": "*="}, index + 2
+    elif input_text.startswith("/=", index):
+        return {"type": "ASSIGNMENT_OP", "value": "/="}, index + 2
+    
+    # Check for logical operators
+    elif input_text.startswith("||", index):
+        return {"type": "LOGICAL_OP", "value": "||"}, index + 2
+    elif input_text.startswith("&&", index):
+        return {"type": "LOGICAL_OP", "value": "&&"}, index + 2
+    elif input_text.startswith("!", index):
+        return {"type": "LOGICAL_OP", "value": "!"}, index + 1
 
     # Check for unary "+" or "-"
     elif input_text[index] in ["+", "-"]:
         # Determine if it should be treated as a unary operator
-        if previous_token and previous_token["type"] in ["DELIMITER", "ASSIGNMENT_OP"]:
+        if previous_token and previous_token["type"] in ["DELIMITER", "ASSIGNMENT_OP", "LOGICAL_OP"]:
             return {"type": "UNARY_OP", "value": input_text[index]}, index + 1
         else:
             # Otherwise, treat it as an arithmetic operator
@@ -133,18 +141,10 @@ def lexer(input_text):
             continue
         
         # Handle unary and arithmetic operators
-        un_op_token, new_index = process_un_arith_op(input_text, index, previous_token)
+        un_op_token, new_index = process_operator(input_text, index, previous_token)
         if un_op_token:
             tokens.append(un_op_token)
             previous_token = un_op_token
-            index = new_index
-            continue
-
-        # Handle assignment operators
-        elif any(input_text.startswith(op, index) for op in ASSIGN_OPS):
-            token, new_index = process_assignment_operator(input_text, index)
-            tokens.append(token)
-            previous_token = token  # Update previous_token
             index = new_index
             continue
 
