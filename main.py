@@ -10,7 +10,10 @@ class TokenType(Enum):
     ARITHMETIC_OP = "ARITHMETIC_OP"
     DELIMITER = "DELIMITER"
     UNARY_OP = "UNARY_OP"
-    LOGICAL_OP = "LOGICAL_OP" 
+    LOGICAL_OP = "LOGICAL_OP"
+    RELATIONAL_OP = "RELATIONAL_OP"
+    RESERVED_WORD = "RESERVED_WORD"
+    COMMENT_SYMBOL = "COMMENT_SYMBOL" 
 
 # define the token class
 class Token:
@@ -21,13 +24,18 @@ class Token:
     def __repr__(self):
         return f"Token({self.token_type}, {repr(self.value)})"
     
-KEYWORDS = ["int", "float", "double", "char", "bool", "string", "exit"]
+KEYWORDS = ["int", "float", "double", "char", "bool", "string", "if", "else", "for", "while", "break", "continue", "printf", "scanf"]
+RES_WORDS = ["gc", "main", "malloc", "true", "false", "enable", "disable"]
 ARITH_OPS = ["*", "/", "%", "^", "#"]
-DELI = [";", "(", ")", "[", "]", "{", "}", ","]
+DELI = [";", "(", ")", "[", "]", "{", "}", ",", "."]
 
 # check if a word is a keyword
 def is_keyword(word):
     return word in KEYWORDS
+
+# check if a word is a keyword
+def is_res_word(word):
+    return word in RES_WORDS
 
 # generate a token for a number
 def generate_number(value):
@@ -36,6 +44,10 @@ def generate_number(value):
 # generate a token for a keyword
 def generate_keyword(value):
     return {"type": "KEYWORD", "value": value}
+
+# generate a token for a reserved word
+def generate_res_word(value):
+    return {"type": "RESERVED_WORD", "value": value}
 
 # generate a token for an identifier
 def generate_identifier(value):
@@ -63,7 +75,11 @@ def process_word(input_text, index):
     # Determine if the word is a keyword, identifier, arith_op, or invalid
     if is_keyword(word_value):
         return generate_keyword(word_value), index
+    elif is_res_word(word_value):
+        return generate_res_word(word_value), index
     elif word_value[0].isdigit():
+        return generate_invalid_identifier(word_value), index
+    elif word_value.startswith("__"):
         return generate_invalid_identifier(word_value), index
     else:
         return generate_identifier(word_value), index
@@ -81,6 +97,14 @@ def process_operator(input_text, index, previous_token):
         return {"type": "UNARY_OP", "value": "++"}, index + 2
     elif input_text.startswith("--", index):
         return {"type": "UNARY_OP", "value": "--"}, index + 2
+    
+    # Check for single line and multiple line comments
+    if input_text.startswith("//", index):
+        return {"type": "COMMENT_SYMBOL", "value": "//"}, index + 2
+    elif input_text.startswith("/*", index):
+        return {"type": "COMMENT_SYMBOL", "value": "/*"}, index + 2
+    elif input_text.startswith("*/", index):
+        return {"type": "COMMENT_SYMBOL", "value": "*/"}, index + 2
     
     # Check for assignment operators
     elif input_text.startswith("=", index):
@@ -101,11 +125,25 @@ def process_operator(input_text, index, previous_token):
         return {"type": "LOGICAL_OP", "value": "&&"}, index + 2
     elif input_text.startswith("!", index):
         return {"type": "LOGICAL_OP", "value": "!"}, index + 1
+    
+    # Check for relational operators
+    elif input_text.startswith("==", index):
+        return {"type": "RELATIONAL_OP", "value": "=="}, index + 2
+    elif input_text.startswith("!=", index):
+        return {"type": "RELATIONAL_OP", "value": "!="}, index + 2
+    elif input_text.startswith(">=", index):
+        return {"type": "RELATIONAL_OP", "value": ">="}, index + 2
+    elif input_text.startswith("<=", index):
+        return {"type": "RELATIONAL_OP", "value": "<="}, index + 2
+    elif input_text.startswith(">", index):
+        return {"type": "RELATIONAL_OP", "value": ">"}, index + 1
+    elif input_text.startswith("<", index):
+        return {"type": "RELATIONAL_OP", "value": "<"}, index + 1
 
     # Check for unary "+" or "-"
     elif input_text[index] in ["+", "-"]:
         # Determine if it should be treated as a unary operator
-        if previous_token and previous_token["type"] in ["DELIMITER", "ASSIGNMENT_OP", "LOGICAL_OP"]:
+        if previous_token and previous_token["type"] in ["DELIMITER", "ASSIGNMENT_OP", "LOGICAL_OP", "RELATIONAL_OP", "COMMENT_SYMBOL"]:
             return {"type": "UNARY_OP", "value": input_text[index]}, index + 1
         else:
             # Otherwise, treat it as an arithmetic operator
@@ -166,7 +204,7 @@ def lexer(input_text):
             index = temp_index
             continue
 
-        # Process words (keywords, identifiers, or invalid identifiers)
+        # Process words (keywords, reserved words, identifiers, or invalid identifiers)
         elif char.isalpha() or char == "_":
             token, index = process_word(input_text, index)
             tokens.append(token)

@@ -1,1 +1,3 @@
-!int val /= 3 || -2;
+// -3 comment;
+
+gc.enable(val);
