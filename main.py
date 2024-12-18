@@ -117,6 +117,8 @@ def process_operator(input_text, index, previous_token):
         return {"type": "ASSIGNMENT_OP", "value": "*="}, index + 2
     elif input_text.startswith("/=", index):
         return {"type": "ASSIGNMENT_OP", "value": "/="}, index + 2
+    elif input_text.startswith("%=", index):
+        return {"type": "ASSIGNMENT_OP", "value": "%="}, index + 2
     
     # Check for logical operators
     elif input_text.startswith("||", index):
