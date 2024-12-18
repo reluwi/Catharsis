@@ -79,7 +79,11 @@ def process_word(input_text, index):
         return generate_res_word(word_value), index
     elif word_value[0].isdigit():
         return generate_invalid_identifier(word_value), index
-    elif word_value.startswith("__"):
+    elif word_value.startswith("_"):
+        return generate_invalid_identifier(word_value), index
+    elif "__" in word_value:
+        return generate_invalid_identifier(word_value), index
+    elif word_value.endswith("_"):
         return generate_invalid_identifier(word_value), index
     else:
         return generate_identifier(word_value), index
