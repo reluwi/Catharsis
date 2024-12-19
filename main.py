@@ -3,8 +3,8 @@ import string
 import os
 
 class TokenType(Enum):
-    CHAR = "CHAR" # not included yet
-    STRING = "STRING" # not included yet
+    CHAR = "CHAR" 
+    STRING = "STRING" 
     INT = "INT"
     FLOAT = "FLOAT" 
     KEYWORD = "KEYWORD"
