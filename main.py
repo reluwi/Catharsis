@@ -1,5 +1,6 @@
 from enum import Enum
 import string
+import os
 
 class TokenType(Enum):
     ASSIGNMENT_OP = "ASSIGNMENT_OP"
@@ -235,21 +236,39 @@ def read_input_file(file_path):
     except Exception as e:
         print(f"Error: {e}")
         return None
-    
+
+def validate_file_extension(filename):
+    # Check if the file has a .cts extension
+    if not filename.endswith('.cat'):
+        raise ValueError(f"Invalid file extension: {filename}. Only .cat files are allowed.")
+    if not os.path.isfile(filename):
+        raise FileNotFoundError(f"File not found: {filename}")
+    return True
+
 def main():
-    file_name = "test.unn"
-
-    input_text = read_input_file(file_name)
-
-    # Proceed only if the file was read successfully
-    if input_text is not None:
-        print(f"Processing file: {file_name}")
-        # Pass the input text to the lexer
+    try:
+        # Example filename (replace with user input or actual filename)
+        filename = "test.cat"
+        
+        # Validate the file extension
+        validate_file_extension(filename)
+        
+        # Open and process the file (if valid)
+        with open(filename, 'r') as file:
+            input_text = file.read()
+        
+        # Call your lexer function or other processing logic
         tokens = lexer(input_text)
-
-        # Print each token
         for token in tokens:
             print(token)
+    
+    except ValueError as ve:
+        print(ve)
+    except FileNotFoundError as fnfe:
+        print(fnfe)
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
 
+# Run the main function
 if __name__ == "__main__":
     main()
