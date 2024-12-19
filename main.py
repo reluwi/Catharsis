@@ -3,8 +3,10 @@ import string
 import os
 
 class TokenType(Enum):
-    ASSIGNMENT_OP = "ASSIGNMENT_OP"
-    INT = "INT" 
+    CHAR = "CHAR" # not included yet
+    STRING = "STRING" # not included yet
+    INT = "INT"
+    FLOAT = "FLOAT" 
     KEYWORD = "KEYWORD"
     IDENTIFIER = "IDENTIFIER"
     INVALID_IDENTIFIER = "INVALID_IDENTIFIER"
@@ -14,7 +16,8 @@ class TokenType(Enum):
     LOGICAL_OP = "LOGICAL_OP"
     RELATIONAL_OP = "RELATIONAL_OP"
     RESERVED_WORD = "RESERVED_WORD"
-    COMMENT_SYMBOL = "COMMENT_SYMBOL" 
+    COMMENT_SYMBOL = "COMMENT_SYMBOL"
+    ASSIGNMENT_OP = "ASSIGNMENT_OP" 
 
 # define the token class
 class Token:
@@ -28,7 +31,7 @@ class Token:
 KEYWORDS = ["int", "float", "double", "char", "bool", "string", "if", "else", "for", "while", "break", "continue", "printf", "scanf"]
 RES_WORDS = ["gc", "main", "malloc", "true", "false", "enable", "disable"]
 ARITH_OPS = ["*", "/", "%", "^", "#"]
-DELI = [";", "(", ")", "[", "]", "{", "}", ",", "."]
+DELI = [";", "(", ")", "[", "]", "{", "}", ","]
 
 # check if a word is a keyword
 def is_keyword(word):
@@ -37,10 +40,6 @@ def is_keyword(word):
 # check if a word is a keyword
 def is_res_word(word):
     return word in RES_WORDS
-
-# generate a token for a number
-def generate_number(value):
-    return {"type": "NUMBER", "value": value}
 
 # generate a token for a keyword
 def generate_keyword(value):
@@ -59,13 +58,43 @@ def generate_invalid_identifier(value):
     return {"type": "INVALID_IDENTIFIER", "value": value}
 
 # process a number
-def process_number(input_text, index):
+def process_number(input_text, index, previous_token):
     start_index = index
-    while index < len(input_text) and input_text[index].isdigit():
-        index += 1
-    number_value = input_text[start_index:index]
-    return generate_number(number_value), index
+    has_dot = False  # Track if the number includes a '.'
 
+    # Process the number (including potential float)
+    while index < len(input_text):
+        char = input_text[index]
+
+        if char.isdigit():
+            index += 1
+        elif char == ".":
+            if has_dot:  # If a dot already exists, stop processing (invalid float)
+                break
+            # Ensure the dot is followed by a digit
+            if index + 1 < len(input_text) and input_text[index + 1].isdigit():
+                has_dot = True
+                index += 1
+            else:
+                break
+        else:
+            break
+
+     # Check for invalid identifiers after processing numbers
+    if index < len(input_text) and input_text[index].isalpha():
+        # If a letter follows the number, it's an invalid identifier
+        while index < len(input_text) and (input_text[index].isalnum() or input_text[index] == "_"):
+            index += 1
+        number_value = input_text[start_index:index]
+        return {"type": "INVALID_IDENTIFIER", "value": number_value}, index
+
+    # Otherwise, determine if it's a float or an integer
+    number_value = input_text[start_index:index]
+    if has_dot:
+        return {"type": "FLOAT", "value": number_value}, index
+    else:
+        return {"type": "NUMBER", "value": number_value}, index
+        
 # process a word (keyword or identifier)
 def process_word(input_text, index):
     start_index = index
@@ -162,6 +191,31 @@ def process_operator(input_text, index, previous_token):
 
     return None, index
 
+# process char and string
+def process_quotes(input_text, index):
+    quote_type = input_text[index]  # Either single or double quote
+    start_index = index
+    index += 1  # Move past the opening quote
+    content = ""
+
+    while index < len(input_text):
+        char = input_text[index]
+        
+        # If we encounter the matching closing quote
+        if char == quote_type:
+            index += 1  # Move past the closing quote
+            if len(content) == 1:
+                return {"type": "CHAR", "value": content}, index
+            else:
+                return {"type": "STRING", "value": content}, index
+        
+        # Otherwise, add character to the content
+        content += char
+        index += 1
+
+    # If no closing quote is found, it's an invalid string or char
+    return {"type": "INVALID_CHAR/STRING", "value": input_text[start_index:index]}, index
+
 # main lexer function    
 def lexer(input_text):
     index = 0
@@ -177,6 +231,13 @@ def lexer(input_text):
             index += 1
             continue
         
+        # Handle quotes (single and double)
+        if char in ["'", '"']:
+            token, index = process_quotes(input_text, index)
+            tokens.append(token)
+            previous_token = token
+            continue
+
         # Handle delimiters
         delimiter_token = process_deli(char)
         if delimiter_token:
@@ -193,22 +254,12 @@ def lexer(input_text):
             index = new_index
             continue
 
-        # Process numbers
-        elif char.isdigit():
-            temp_index = index
-            while temp_index < length and input_text[temp_index].isalnum():
-                temp_index += 1
-
-            token_value = input_text[index:temp_index]
-            
-            if any(c.isalpha() for c in token_value):  # Check if it contains letters
-                token = ({"type": "INVALID_IDENTIFIER", "value": token_value})
-            else:
-                token = ({"type": "NUMBER", "value": token_value})
-
+        # Process numbers and float
+        elif char.isdigit() or (char == "." and index + 1 < length and input_text[index + 1].isdigit()):
+            token, new_index = process_number(input_text, index, previous_token)
             tokens.append(token)
             previous_token = token
-            index = temp_index
+            index = new_index
             continue
 
         # Process words (keywords, reserved words, identifiers, or invalid identifiers)
@@ -237,8 +288,8 @@ def read_input_file(file_path):
         print(f"Error: {e}")
         return None
 
+# Check if the file has a .cts extension
 def validate_file_extension(filename):
-    # Check if the file has a .cts extension
     if not filename.endswith('.cat'):
         raise ValueError(f"Invalid file extension: {filename}. Only .cat files are allowed.")
     if not os.path.isfile(filename):
