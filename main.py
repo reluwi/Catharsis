@@ -32,14 +32,19 @@ KEYWORDS = ["int", "float", "double", "char", "bool", "string", "if", "else", "f
 RES_WORDS = ["gc", "main", "malloc", "true", "false", "enable", "disable"]
 ARITH_OPS = ["*", "/", "%", "^", "#"]
 DELI = [";", "(", ")", "[", "]", "{", "}", ","]
+BOOL = ["True", "False", "TRUE", "FALSE", "true", "false"]
 
 # check if a word is a keyword
 def is_keyword(word):
     return word in KEYWORDS
 
-# check if a word is a keyword
+# check if a word is a reserved word
 def is_res_word(word):
     return word in RES_WORDS
+
+# check if a word is a boolean value
+def is_bool(word):
+    return word in BOOL
 
 # generate a token for a keyword
 def generate_keyword(value):
@@ -48,6 +53,10 @@ def generate_keyword(value):
 # generate a token for a reserved word
 def generate_res_word(value):
     return {"type": "RESERVED_WORD", "value": value}
+
+# generate a token for a boolean value
+def generate_bool(value):
+    return {"type": "Boolean", "value": value}
 
 # generate a token for an identifier
 def generate_identifier(value):
@@ -91,9 +100,13 @@ def process_number(input_text, index, previous_token):
     # Otherwise, determine if it's a float or an integer
     number_value = input_text[start_index:index]
     if has_dot:
-        return {"type": "FLOAT", "value": number_value}, index
+        num_after_dots = len(number_value.split('.', 1)[1])
+        if(num_after_dots < 8):
+            return {"type": "FLOAT", "value": number_value}, index
+        else:
+            return {"type": "DOUBLE", "value": number_value}, index
     else:
-        return {"type": "NUMBER", "value": number_value}, index
+        return {"type": "INTEGER", "value": number_value}, index
         
 # process a word (keyword or identifier)
 def process_word(input_text, index):
@@ -107,6 +120,8 @@ def process_word(input_text, index):
         return generate_keyword(word_value), index
     elif is_res_word(word_value):
         return generate_res_word(word_value), index
+    elif is_bool(word_value):
+        return generate_bool(word_value), index
     elif word_value[0].isdigit():
         return generate_invalid_identifier(word_value), index
     elif word_value.startswith("_"):
