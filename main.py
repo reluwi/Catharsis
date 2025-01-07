@@ -1,6 +1,7 @@
 from enum import Enum
 import string
 import os
+import csv
     
 KEYWORDS = ["int", "float", "double", "char", "bool", "string", "if", "else", "for", "while", "break", "continue", "printf", "scanf"]
 RES_WORDS = ["gc", "main", "malloc", "true", "false", "enable", "disable"]
@@ -313,6 +314,9 @@ def lexer(input_text):
             print(f"Warning: Unrecognized character '{char}' at index {index}")
             index += 1
 
+    # Write tokens to a CSV file
+    write_tokens_to_csv(tokens)
+
     return tokens
 
 # Check if the file has a .cts extension
@@ -322,6 +326,25 @@ def validate_file_extension(filename):
     if not os.path.isfile(filename):
         raise FileNotFoundError(f"File not found: {filename}")
     return True
+
+# Function to write tokens to a CSV file
+def write_tokens_to_csv(tokens, filename="LexOutput.csv"):
+    """
+    Writes the list of tokens to a CSV file.
+    """
+    with open(filename, mode="w", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+        
+        # Write the header
+        writer.writerow(["Token Type", " Token Value"])
+        
+        # Write the tokens
+        for token in tokens:
+            token_type = token["type"]
+            token_value = token["value"]
+            writer.writerow([f"{token_type}, {token_value}"])  # Add space after the comma
+    
+    print(f"Tokens successfully written to {filename}")
 
 def main():
     try:

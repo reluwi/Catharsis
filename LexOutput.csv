@@ -1,0 +1,8 @@
+Token Type, Token Value
+"KEYWORD, int"
+"IDENTIFIER, a"
+"ASSIGNMENT_OP, ="
+"INTEGER, 5"
+"ARITHMETIC_OP, *"
+"INTEGER, 1"
+"DELIMITER, ;"
