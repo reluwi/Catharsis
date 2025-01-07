@@ -1,38 +1,14 @@
 from enum import Enum
 import string
 import os
-
-class TokenType(Enum):
-    CHAR = "CHAR" 
-    STRING = "STRING" 
-    INT = "INT"
-    FLOAT = "FLOAT" 
-    KEYWORD = "KEYWORD"
-    IDENTIFIER = "IDENTIFIER"
-    INVALID_IDENTIFIER = "INVALID_IDENTIFIER"
-    ARITHMETIC_OP = "ARITHMETIC_OP"
-    DELIMITER = "DELIMITER"
-    UNARY_OP = "UNARY_OP"
-    LOGICAL_OP = "LOGICAL_OP"
-    RELATIONAL_OP = "RELATIONAL_OP"
-    RESERVED_WORD = "RESERVED_WORD"
-    COMMENT_SYMBOL = "COMMENT_SYMBOL"
-    ASSIGNMENT_OP = "ASSIGNMENT_OP" 
-
-# define the token class
-class Token:
-    def __init__(self, token_type, value):
-        self.token_type = token_type
-        self.value = value
-
-    def __repr__(self):
-        return f"Token({self.token_type}, {repr(self.value)})"
     
 KEYWORDS = ["int", "float", "double", "char", "bool", "string", "if", "else", "for", "while", "break", "continue", "printf", "scanf"]
 RES_WORDS = ["gc", "main", "malloc", "true", "false", "enable", "disable"]
+NOISE_WORDS = ["boolean" , "integer", "character"] #function
 ARITH_OPS = ["*", "/", "%", "^", "#"]
 DELI = [";", "(", ")", "[", "]", "{", "}", ","]
 BOOL = ["True", "False", "TRUE", "FALSE", "true", "false"]
+SPECIAL_CHAR = {"~", "?", "@","$", "|", "&"}
 
 # check if a word is a keyword
 def is_keyword(word):
@@ -111,9 +87,17 @@ def process_number(input_text, index, previous_token):
 # process a word (keyword or identifier)
 def process_word(input_text, index):
     start_index = index
-    while index < len(input_text) and (input_text[index].isalnum() or input_text[index] == "_"):
+    while index < len(input_text) and (input_text[index].isalnum() or input_text[index] == "_" or input_text[index] in SPECIAL_CHAR):
         index += 1
     word_value = input_text[start_index:index]
+
+    # Handle single-line comments ("//")
+    if input_text.startswith("//", index):
+        index += 2  # Skip the "//"
+        while index < len(input_text) and input_text[index] != "\n":  # Read until end of line
+            index += 1
+        comment_value = input_text[start_index:index]
+        return {"type": "COMMENT_VALUE", "value": comment_value}, index
 
     # Determine if the word is a keyword, identifier, arith_op, or invalid
     if is_keyword(word_value):
@@ -127,6 +111,8 @@ def process_word(input_text, index):
     elif word_value.startswith("_"):
         return generate_invalid_identifier(word_value), index
     elif "__" in word_value:
+        return generate_invalid_identifier(word_value), index
+    elif any(char in word_value for char in SPECIAL_CHAR):
         return generate_invalid_identifier(word_value), index
     elif word_value.endswith("_"):
         return generate_invalid_identifier(word_value), index
@@ -142,7 +128,7 @@ def process_deli(char):
 # Process unary and arithmetic operators
 def process_operator(input_text, index, previous_token):
     VALID_OPERATORS = ["*", "/", "%", "^", "#", "=", "!", "&&", "||", "+", "-", "++", "--", 
-                       "//", "/*", "*/", "+=", "-=", "/=", "*=", "%=", "==", "!=", ">=", "<="]
+                       "//", "/*", "*/", "+=", "-=", "/=", "*=", "%=", "==", "!=", ">=", "<=", ">", "<", "#"]
     
     start_index = index
     
@@ -160,12 +146,34 @@ def process_operator(input_text, index, previous_token):
             return {"type": "UNARY_OP", "value": operator_sequence}, index
         
         # Check for single line and multiple line comments
-        elif operator_sequence == "//":
-            return {"type": "COMMENT_SYMBOL", "value": "//"}, index 
+        # elif operator_sequence == "//":
+        #     return {"type": "COMMENT_SYMBOL", "value": "//"}, index 
+        # elif operator_sequence == "/*":
+        #     return {"type": "COMMENT_SYMBOL", "value": "/*"}, index
+        # elif operator_sequence == "*/":
+        #     return {"type": "COMMENT_SYMBOL", "value": "*/"}, index
+
+        # Handle single-line comments ("//")
+        if operator_sequence == "//":
+            # Collect the comment value until the end of the line
+            while index < len(input_text) and input_text[index] != "\n":
+                index += 1
+            comment_value = input_text[start_index:index]
+            return {"type": "SINGLE_LINE_COMMENT", "value": comment_value}, index 
+        
+        # Handle multi-line comments ("/* */")
         elif operator_sequence == "/*":
-            return {"type": "COMMENT_SYMBOL", "value": "/*"}, index
-        elif operator_sequence == "*/":
-            return {"type": "COMMENT_SYMBOL", "value": "*/"}, index 
+            comment_value = ""
+            # Collect the comment value until "*/" is found
+            while index < len(input_text) and not input_text.startswith("*/", index):
+                if input_text[index] != "\n":  # Ignore newline characters
+                    comment_value += input_text[index]
+                index += 1
+            if index < len(input_text):  # If "*/" is found
+                index += 2
+            comment_value = "/*" + comment_value + "*/"  # Add the delimiters back
+            return {"type": "MULIT_LINE_COMMENT", "value": comment_value}, index
+
         
         # Check for assignment operators
         elif operator_sequence == "=":
@@ -206,7 +214,7 @@ def process_operator(input_text, index, previous_token):
         # Check for unary "+" or "-"
         elif operator_sequence == "+" or operator_sequence == "-":
             # Determine if it should be treated as a unary operator
-            if previous_token and previous_token["type"] in ["DELIMITER", "ASSIGNMENT_OP", "LOGICAL_OP", "RELATIONAL_OP", "COMMENT_SYMBOL"]:
+            if previous_token == None or previous_token and previous_token["type"] in ["DELIMITER", "ASSIGNMENT_OP", "LOGICAL_OP", "RELATIONAL_OP", "COMMENT_SYMBOL", "KEYWORD"]:
                 return {"type": "UNARY_OP", "value": operator_sequence}, index 
             else:
                 # Otherwise, treat it as an arithmetic operator
@@ -294,7 +302,7 @@ def lexer(input_text):
             continue
 
         # Process words (keywords, reserved words, identifiers, or invalid identifiers)
-        elif char.isalpha() or char == "_":
+        elif char.isalpha() or char == "_" or input_text[index] in SPECIAL_CHAR:
             token, index = process_word(input_text, index)
             tokens.append(token)
             previous_token = token
@@ -306,18 +314,6 @@ def lexer(input_text):
             index += 1
 
     return tokens
-
-def read_input_file(file_path):
-    try:
-        with open("test.unn", "r") as file:
-            input_text = file.read()
-        return input_text
-    except FileNotFoundError:
-        print(f"Error: File '{file_path}' not found.")
-        return None
-    except Exception as e:
-        print(f"Error: {e}")
-        return None
 
 # Check if the file has a .cts extension
 def validate_file_extension(filename):
