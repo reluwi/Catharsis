@@ -126,68 +126,84 @@ def process_deli(char):
 
 # Process unary and arithmetic operators
 def process_operator(input_text, index, previous_token):
-    # Check for "++" and "--"
-    if input_text.startswith("++", index):
-        return {"type": "UNARY_OP", "value": "++"}, index + 2
-    elif input_text.startswith("--", index):
-        return {"type": "UNARY_OP", "value": "--"}, index + 2
+    VALID_OPERATORS = ["*", "/", "%", "^", "#", "=", "!", "&&", "||", "+", "-", "++", "--", 
+                       "//", "/*", "*/", "+=", "-=", "/=", "*=", "%=", "==", "!=", ">=", "<="]
     
-    # Check for single line and multiple line comments
-    if input_text.startswith("//", index):
-        return {"type": "COMMENT_SYMBOL", "value": "//"}, index + 2
-    elif input_text.startswith("/*", index):
-        return {"type": "COMMENT_SYMBOL", "value": "/*"}, index + 2
-    elif input_text.startswith("*/", index):
-        return {"type": "COMMENT_SYMBOL", "value": "*/"}, index + 2
+    start_index = index
     
-    # Check for assignment operators
-    elif input_text.startswith("=", index):
-        return {"type": "ASSIGNMENT_OP", "value": "="}, index + 1
-    elif input_text.startswith("+=", index):
-        return {"type": "ASSIGNMENT_OP", "value": "+="}, index + 2
-    elif input_text.startswith("-=", index):
-        return {"type": "ASSIGNMENT_OP", "value": "-="}, index + 2
-    elif input_text.startswith("*=", index):
-        return {"type": "ASSIGNMENT_OP", "value": "*="}, index + 2
-    elif input_text.startswith("/=", index):
-        return {"type": "ASSIGNMENT_OP", "value": "/="}, index + 2
-    elif input_text.startswith("%=", index):
-        return {"type": "ASSIGNMENT_OP", "value": "%="}, index + 2
-    
-    # Check for logical operators
-    elif input_text.startswith("||", index):
-        return {"type": "LOGICAL_OP", "value": "||"}, index + 2
-    elif input_text.startswith("&&", index):
-        return {"type": "LOGICAL_OP", "value": "&&"}, index + 2
-    elif input_text.startswith("!", index):
-        return {"type": "LOGICAL_OP", "value": "!"}, index + 1
-    
-    # Check for relational operators
-    elif input_text.startswith("==", index):
-        return {"type": "RELATIONAL_OP", "value": "=="}, index + 2
-    elif input_text.startswith("!=", index):
-        return {"type": "RELATIONAL_OP", "value": "!="}, index + 2
-    elif input_text.startswith(">=", index):
-        return {"type": "RELATIONAL_OP", "value": ">="}, index + 2
-    elif input_text.startswith("<=", index):
-        return {"type": "RELATIONAL_OP", "value": "<="}, index + 2
-    elif input_text.startswith(">", index):
-        return {"type": "RELATIONAL_OP", "value": ">"}, index + 1
-    elif input_text.startswith("<", index):
-        return {"type": "RELATIONAL_OP", "value": "<"}, index + 1
+    # Check for sequences of consecutive operators like "++", "--", etc.
+    while index < len(input_text) and input_text[index] in "+-*/%=!&|<>^":
+        index += 1
 
-    # Check for unary "+" or "-"
-    elif input_text[index] in ["+", "-"]:
-        # Determine if it should be treated as a unary operator
-        if previous_token and previous_token["type"] in ["DELIMITER", "ASSIGNMENT_OP", "LOGICAL_OP", "RELATIONAL_OP", "COMMENT_SYMBOL"]:
-            return {"type": "UNARY_OP", "value": input_text[index]}, index + 1
-        else:
-            # Otherwise, treat it as an arithmetic operator
-            return {"type": "ARITHMETIC_OP", "value": input_text[index]}, index + 1
+    # Get the operator sequence
+    operator_sequence = input_text[start_index:index]
+    
+    # Check if the operator sequence is valid
+    if operator_sequence in VALID_OPERATORS:
+        # If it's a valid operator, check if it's a unary operator like '++' or '--'
+        if operator_sequence == "++" or operator_sequence == "--":
+            return {"type": "UNARY_OP", "value": operator_sequence}, index
+        
+        # Check for single line and multiple line comments
+        elif operator_sequence == "//":
+            return {"type": "COMMENT_SYMBOL", "value": "//"}, index 
+        elif operator_sequence == "/*":
+            return {"type": "COMMENT_SYMBOL", "value": "/*"}, index
+        elif operator_sequence == "*/":
+            return {"type": "COMMENT_SYMBOL", "value": "*/"}, index 
+        
+        # Check for assignment operators
+        elif operator_sequence == "=":
+            return {"type": "ASSIGNMENT_OP", "value": "="}, index 
+        elif operator_sequence == "+=":
+            return {"type": "ASSIGNMENT_OP", "value": "+="}, index
+        elif operator_sequence == "-=":
+            return {"type": "ASSIGNMENT_OP", "value": "-="}, index 
+        elif operator_sequence == "*=":
+            return {"type": "ASSIGNMENT_OP", "value": "*="}, index 
+        elif operator_sequence == "/=":
+            return {"type": "ASSIGNMENT_OP", "value": "/="}, index 
+        elif operator_sequence == "%=":
+            return {"type": "ASSIGNMENT_OP", "value": "%="}, index
 
-    # check for other arithmetic op
-    elif input_text[index] in ARITH_OPS:
-        return {"type": "ARITHMETIC_OP", "value": input_text[index]}, index + 1
+        # Check for logical operators
+        elif operator_sequence == "||":
+            return {"type": "LOGICAL_OP", "value": "||"}, index 
+        elif operator_sequence == "&&":
+            return {"type": "LOGICAL_OP", "value": "&&"}, index 
+        elif operator_sequence == "!":
+            return {"type": "LOGICAL_OP", "value": "!"}, index
+        
+        # Check for relational operators
+        elif operator_sequence == "==":
+            return {"type": "RELATIONAL_OP", "value": "=="}, index 
+        elif operator_sequence == "!=":
+            return {"type": "RELATIONAL_OP", "value": "!="}, index 
+        elif operator_sequence == ">=":
+            return {"type": "RELATIONAL_OP", "value": ">="}, index 
+        elif operator_sequence == "<=":
+            return {"type": "RELATIONAL_OP", "value": "<="}, index 
+        elif operator_sequence == ">":
+            return {"type": "RELATIONAL_OP", "value": ">"}, index 
+        elif operator_sequence == "<":
+            return {"type": "RELATIONAL_OP", "value": "<"}, index 
+        
+        # Check for unary "+" or "-"
+        elif operator_sequence == "+" or operator_sequence == "-":
+            # Determine if it should be treated as a unary operator
+            if previous_token and previous_token["type"] in ["DELIMITER", "ASSIGNMENT_OP", "LOGICAL_OP", "RELATIONAL_OP", "COMMENT_SYMBOL"]:
+                return {"type": "UNARY_OP", "value": operator_sequence}, index 
+            else:
+                # Otherwise, treat it as an arithmetic operator
+                return {"type": "ARITHMETIC_OP", "value": operator_sequence}, index 
+
+        # check for other arithmetic op
+        elif operator_sequence in ARITH_OPS:
+            return {"type": "ARITHMETIC_OP", "value": operator_sequence}, index 
+    
+    # If the operator sequence exceeds valid length, it's unrecognized
+    if len(operator_sequence) > 2:  # Check if it's more than two consecutive symbols
+        return {"type": "UNRECOGNIZED_OPERATOR", "value": operator_sequence}, index
 
     return None, index
 
