@@ -120,7 +120,7 @@ def process_deli(char):
 
 # Process unary and arithmetic operators
 def process_operator(input_text, index, previous_token):
-    VALID_OPERATORS = ["*", "/", "%", "^", "#", "=", "!", "&&", "||", "+", "-", "++", "--", 
+    VALID_OPERATORS = ["*", "/", "%", "^", "#", "=", "!", "&&", "||", "+", "-", "++", "--", "&",
                        "//", "/*", "*/", "+=", "-=", "/=", "*=", "%=", "==", "!=", ">=", "<=", ">", "<"]
     
     start_index = index
@@ -158,6 +158,10 @@ def process_operator(input_text, index, previous_token):
                 index += 2
             comment_value = "/*" + comment_value + "*/"  # Add the delimiters back
             return {"type": "MULIT_LINE_COMMENT", "value": comment_value}, index
+        
+        # Check for address operator
+        elif operator_sequence == "&":
+            return {"type": "ADDRESS_OP", "value": "&"}, index 
         
         # Check for assignment operators
         elif operator_sequence == "=":
@@ -236,13 +240,16 @@ def process_quotes(input_text, index):
             else:
                 return {"type": "STRING", "value": content}, index
         
+        if char == "\n":
+            break
+        
         # Otherwise, add character to the content
-        if input_text[index] != "\n":
-            content += char
+        content += char
         index += 1
 
     # If no closing quote is found, it's an invalid string or char
-    return {"type": "INVALID_CHAR/STRING", "value": input_text[start_index:index]}, index
+    if(char == "\n"):
+        return {"type": "INVALID_CHAR/STRING", "value": input_text[start_index:index]}, index
 
 # main lexer function    
 def lexer(input_text):
