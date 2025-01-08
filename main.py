@@ -9,7 +9,7 @@ NOISE_WORDS = ["boolean" , "integer", "character"] #function
 ARITH_OPS = ["*", "/", "%", "^", "#"]
 DELI = [";", "(", ")", "[", "]", "{", "}", ","]
 BOOL = ["True", "False", "TRUE", "FALSE", "true", "false"]
-SPECIAL_CHAR = {"~", "?", "@","$", "|", "&"}
+SPECIAL_CHAR = {"~", "?", "@","$", "|", "&", "."}
 
 # check if a word is a keyword
 def is_keyword(word):
@@ -92,14 +92,6 @@ def process_word(input_text, index):
         index += 1
     word_value = input_text[start_index:index]
 
-    # Handle single-line comments ("//")
-    if input_text.startswith("//", index):
-        index += 2  # Skip the "//"
-        while index < len(input_text) and input_text[index] != "\n":  # Read until end of line
-            index += 1
-        comment_value = input_text[start_index:index]
-        return {"type": "COMMENT_VALUE", "value": comment_value}, index
-
     # Determine if the word is a keyword, identifier, arith_op, or invalid
     if is_keyword(word_value):
         return generate_keyword(word_value), index
@@ -129,7 +121,7 @@ def process_deli(char):
 # Process unary and arithmetic operators
 def process_operator(input_text, index, previous_token):
     VALID_OPERATORS = ["*", "/", "%", "^", "#", "=", "!", "&&", "||", "+", "-", "++", "--", 
-                       "//", "/*", "*/", "+=", "-=", "/=", "*=", "%=", "==", "!=", ">=", "<=", ">", "<", "#"]
+                       "//", "/*", "*/", "+=", "-=", "/=", "*=", "%=", "==", "!=", ">=", "<=", ">", "<"]
     
     start_index = index
     
@@ -145,14 +137,6 @@ def process_operator(input_text, index, previous_token):
         # If it's a valid operator, check if it's a unary operator like '++' or '--'
         if operator_sequence == "++" or operator_sequence == "--":
             return {"type": "UNARY_OP", "value": operator_sequence}, index
-        
-        # Check for single line and multiple line comments
-        # elif operator_sequence == "//":
-        #     return {"type": "COMMENT_SYMBOL", "value": "//"}, index 
-        # elif operator_sequence == "/*":
-        #     return {"type": "COMMENT_SYMBOL", "value": "/*"}, index
-        # elif operator_sequence == "*/":
-        #     return {"type": "COMMENT_SYMBOL", "value": "*/"}, index
 
         # Handle single-line comments ("//")
         if operator_sequence == "//":
@@ -174,7 +158,6 @@ def process_operator(input_text, index, previous_token):
                 index += 2
             comment_value = "/*" + comment_value + "*/"  # Add the delimiters back
             return {"type": "MULIT_LINE_COMMENT", "value": comment_value}, index
-
         
         # Check for assignment operators
         elif operator_sequence == "=":
@@ -225,6 +208,10 @@ def process_operator(input_text, index, previous_token):
         elif operator_sequence in ARITH_OPS:
             return {"type": "ARITHMETIC_OP", "value": operator_sequence}, index 
     
+    #for invalid operators that are not more than 3
+    if operator_sequence and operator_sequence not in VALID_OPERATORS:
+        return {"type": "UNRECOGNIZED_OPERATOR", "value": operator_sequence}, index
+
     # If the operator sequence exceeds valid length, it's unrecognized
     if len(operator_sequence) > 2:  # Check if it's more than two consecutive symbols
         return {"type": "UNRECOGNIZED_OPERATOR", "value": operator_sequence}, index
@@ -250,7 +237,8 @@ def process_quotes(input_text, index):
                 return {"type": "STRING", "value": content}, index
         
         # Otherwise, add character to the content
-        content += char
+        if input_text[index] != "\n":
+            content += char
         index += 1
 
     # If no closing quote is found, it's an invalid string or char
