@@ -1,4 +1,6 @@
 Token Type, Token Value
-"INTEGER, 2"
-"UNRECOGNIZED_OPERATOR, &-"
-"INTEGER, 3"
+KEYWORD,string
+IDENTIFIER,name
+ASSIGNMENT_OP,=
+STRING,rainier
+DELIMITER,;

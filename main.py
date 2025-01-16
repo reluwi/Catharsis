@@ -23,6 +23,9 @@ def is_res_word(word):
 def is_bool(word):
     return word in BOOL
 
+def is_noise(word):
+    return word in NOISE_WORDS
+
 # generate a token for a keyword
 def generate_keyword(value):
     return {"type": "KEYWORD", "value": value}
@@ -33,7 +36,7 @@ def generate_res_word(value):
 
 # generate a token for a boolean value
 def generate_bool(value):
-    return {"type": "Boolean", "value": value}
+    return {"type": "BOOLEAN", "value": value}
 
 # generate a token for an identifier
 def generate_identifier(value):
@@ -42,6 +45,15 @@ def generate_identifier(value):
 # generate a token for an invalid identifier
 def generate_invalid_identifier(value):
     return {"type": "INVALID_IDENTIFIER", "value": value}
+
+def generate_noise_word(value):
+    return {"type": "NOISE_WORD", "value": value}
+
+# Process a delimiter
+def process_deli(char):
+    if char in DELI:
+        return {"type": "DELIMITER", "value": char}
+    return None
 
 # process a number
 def process_number(input_text, index, previous_token):
@@ -99,6 +111,8 @@ def process_word(input_text, index):
         return generate_res_word(word_value), index
     elif is_bool(word_value):
         return generate_bool(word_value), index
+    elif is_noise(word_value):
+        return generate_noise_word(word_value), index
     elif word_value[0].isdigit():
         return generate_invalid_identifier(word_value), index
     elif word_value.startswith("_"):
@@ -111,12 +125,6 @@ def process_word(input_text, index):
         return generate_invalid_identifier(word_value), index
     else:
         return generate_identifier(word_value), index
-    
-# Process a delimiter
-def process_deli(char):
-    if char in DELI:
-        return {"type": "DELIMITER", "value": char}
-    return None
 
 # Process unary and arithmetic operators
 def process_operator(input_text, index, previous_token):
@@ -126,7 +134,7 @@ def process_operator(input_text, index, previous_token):
     start_index = index
     
     # Check for sequences of consecutive operators like "++", "--", etc.
-    while index < len(input_text) and input_text[index] in "+-*/%=!&|<>^":
+    while index < len(input_text) and input_text[index] in "#+-*/%=!&|<>^":
         index += 1
 
     # Get the operator sequence
@@ -161,7 +169,11 @@ def process_operator(input_text, index, previous_token):
         
         # Check for address operator
         elif operator_sequence == "&":
-            return {"type": "ADDRESS_OP", "value": "&"}, index 
+            return {"type": "ADDRESS_OP", "value": "&"}, index
+
+        # Check for Square root
+        elif operator_sequence == "#":
+            return {"type": "ROOT", "value": "#"}, index  
         
         # Check for assignment operators
         elif operator_sequence == "=":
@@ -202,7 +214,7 @@ def process_operator(input_text, index, previous_token):
         # Check for unary "+" or "-"
         elif operator_sequence == "+" or operator_sequence == "-":
             # Determine if it should be treated as a unary operator
-            if previous_token == None or previous_token and previous_token["type"] in ["DELIMITER", "ASSIGNMENT_OP", "LOGICAL_OP", "RELATIONAL_OP", "COMMENT_SYMBOL", "KEYWORD"]:
+            if previous_token == None or previous_token and previous_token["type"] in ["DELIMITER", "ASSIGNMENT_OP", "LOGICAL_OP", "RELATIONAL_OP", "COMMENT_SYMBOL", "KEYWORD", "NOISE_WORD"]:
                 return {"type": "UNARY_OP", "value": operator_sequence}, index 
             else:
                 # Otherwise, treat it as an arithmetic operator
@@ -309,9 +321,6 @@ def lexer(input_text):
             print(f"Warning: Unrecognized character '{char}' at index {index}")
             index += 1
 
-    # Write tokens to a CSV file
-    write_tokens_to_csv(tokens)
-
     return tokens
 
 # Check if the file has a .cts extension
@@ -337,13 +346,13 @@ def write_tokens_to_csv(tokens, filename="LexOutput.csv"):
         for token in tokens:
             token_type = token["type"]
             token_value = token["value"]
-            writer.writerow([f"{token_type}, {token_value}"])  # Add space after the comma
+            writer.writerow([token_type, token_value]) 
     
     print(f"Tokens successfully written to {filename}")
 
 def main():
     try:
-        # Example filename (replace with user input or actual filename)
+        # Example filename 
         filename = "test.cat"
         
         # Validate the file extension
@@ -357,6 +366,11 @@ def main():
         tokens = lexer(input_text)
         for token in tokens:
             print(token)
+        
+        output_filename = "LexOutput.csv"
+
+        # Write tokens to CSV only if the output file extension is valid
+        write_tokens_to_csv(tokens, output_filename)
     
     except ValueError as ve:
         print(ve)
