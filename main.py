@@ -4,8 +4,8 @@ import os
 import csv
     
 KEYWORDS = ["int", "float", "double", "char", "bool", "string", "if", "else", "for", "while", "break", "continue", "printf", "scanf"]
-RES_WORDS = ["gc", "main", "malloc", "true", "false", "enable", "disable"]
-NOISE_WORDS = ["boolean" , "integer", "character"] #function
+RES_WORDS = ["gc", "main", "malloc", "true", "false"]
+NOISE_WORDS = ["boolean" , "integer", "character"] 
 ARITH_OPS = ["*", "/", "%", "^", "#"]
 DELI = [";", "(", ")", "[", "]", "{", "}", ","]
 BOOL = ["True", "False", "TRUE", "FALSE", "true", "false"]
@@ -170,10 +170,6 @@ def process_operator(input_text, index, previous_token):
         # Check for address operator
         elif operator_sequence == "&":
             return {"type": "ADDRESS_OP", "value": "&"}, index
-
-        # Check for Square root
-        elif operator_sequence == "#":
-            return {"type": "ROOT", "value": "#"}, index  
         
         # Check for assignment operators
         elif operator_sequence == "=":
@@ -247,6 +243,8 @@ def process_quotes(input_text, index):
         # If we encounter the matching closing quote
         if char == quote_type:
             index += 1  # Move past the closing quote
+            if len(content) == 0:
+                return {"type": "EMPTY_STRING", "value": content}, index
             if len(content) == 1:
                 return {"type": "CHAR", "value": content}, index
             else:
@@ -323,7 +321,7 @@ def lexer(input_text):
 
     return tokens
 
-# Check if the file has a .cts extension
+# Check if the file has a .cat extension
 def validate_file_extension(filename):
     if not filename.endswith('.cat'):
         raise ValueError(f"Invalid file extension: {filename}. Only .cat files are allowed.")
@@ -340,42 +338,51 @@ def write_tokens_to_csv(tokens, filename="LexOutput.csv"):
         writer = csv.writer(file)
         
         # Write the header
-        writer.writerow(["Token Type", " Token Value"])
+        writer.writerow(["Token Value", "Token Type"])
         
         # Write the tokens
         for token in tokens:
             token_type = token["type"]
             token_value = token["value"]
-            writer.writerow([token_type, token_value]) 
+            writer.writerow([token_value, token_type]) 
     
     print(f"Tokens successfully written to {filename}")
+    return True
 
 def main():
+    while True:
+        try:
+            # Ask user for the input file name
+            input_filename = input("Enter the name of the .cat file to process: ").strip()
+            
+            # Validate the input file name
+            if validate_file_extension(input_filename):
+                break  # Exit loop if the file is valid
+
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+    
     try:
-        # Example filename 
-        filename = "test.cat"
-        
-        # Validate the file extension
-        validate_file_extension(filename)
-        
         # Open and process the file (if valid)
-        with open(filename, 'r') as file:
+        with open(input_filename, 'r') as file:
             input_text = file.read()
         
         # Call your lexer function or other processing logic
-        tokens = lexer(input_text)
-        for token in tokens:
-            print(token)
+        tokens = lexer(input_text)  # Replace with your lexer implementation
         
-        output_filename = "LexOutput.csv"
+        while True:
+            # Ask user for the output CSV file name
+            output_filename = input("Enter the name of the CSV file to save the tokens (e.g., tokens.csv): ").strip()
+            
+            # Ensure it has a .csv extension
+            if not output_filename.endswith('.csv'):
+                print("Invalid file extension. Please provide a filename ending with '.csv'.")
+                continue
+            
+            # Write tokens to the specified CSV file
+            write_tokens_to_csv(tokens, output_filename)
+            break  # Exit the loop once the tokens are written successfully
 
-        # Write tokens to CSV only if the output file extension is valid
-        write_tokens_to_csv(tokens, output_filename)
-    
-    except ValueError as ve:
-        print(ve)
-    except FileNotFoundError as fnfe:
-        print(fnfe)
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
 

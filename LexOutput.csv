@@ -1,6 +1,6 @@
-Token Type, Token Value
-KEYWORD,string
-IDENTIFIER,name
-ASSIGNMENT_OP,=
-STRING,rainier
-DELIMITER,;
+Token Value,Token Type
+int,KEYWORD
+num,IDENTIFIER
+=,ASSIGNMENT_OP
+32,INTEGER
+;,DELIMITER
