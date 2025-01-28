@@ -1,0 +1,4 @@
+Token Value,Token Type
+int,INT_KEY
+5,INTEGER
+;,SEMI-COLON_DELI

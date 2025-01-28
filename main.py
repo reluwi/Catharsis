@@ -1,15 +1,16 @@
 from enum import Enum
+from parser import Parser, SyntaxError
 import string
 import os
 import csv
     
 KEYWORDS = ["int", "float", "double", "char", "bool", "string", "if", "else", "for", "while", "break", "continue", "printf", "scanf"]
-RES_WORDS = ["gc", "main", "malloc", "true", "false"]
+RES_WORDS = ["gc", "main", "malloc"]
 NOISE_WORDS = ["boolean" , "integer", "character"] 
 ARITH_OPS = ["*", "/", "%", "^", "#"]
 DELI = [";", "(", ")", "[", "]", "{", "}", ","]
 BOOL = ["True", "False", "TRUE", "FALSE", "true", "false"]
-SPECIAL_CHAR = {"~", "?", "@","$", "|", "&", "."}
+SPECIAL_CHAR = {"~", "?", "@","$", "|", "."}
 
 # check if a word is a keyword
 def is_keyword(word):
@@ -26,33 +27,25 @@ def is_bool(word):
 def is_noise(word):
     return word in NOISE_WORDS
 
-# generate a token for a keyword
-def generate_keyword(value):
-    return {"type": "KEYWORD", "value": value}
-
-# generate a token for a reserved word
-def generate_res_word(value):
-    return {"type": "RESERVED_WORD", "value": value}
-
-# generate a token for a boolean value
-def generate_bool(value):
-    return {"type": "BOOLEAN", "value": value}
-
-# generate a token for an identifier
-def generate_identifier(value):
-    return {"type": "IDENTIFIER", "value": value}
-
-# generate a token for an invalid identifier
-def generate_invalid_identifier(value):
-    return {"type": "INVALID_IDENTIFIER", "value": value}
-
-def generate_noise_word(value):
-    return {"type": "NOISE_WORD", "value": value}
-
 # Process a delimiter
 def process_deli(char):
     if char in DELI:
-        return {"type": "DELIMITER", "value": char}
+        if char == ";":
+            return {"type": "SEMI-COLON_DELI", "value": char}
+        if char == "(":
+            return {"type": "OPEN-PAREN_DELI", "value": char}
+        if char == ")":
+            return {"type": "CLOSE-PAREN_DELI", "value": char}
+        if char == "[":
+            return {"type": "OPEN-BRAC_DELI", "value": char}
+        if char == "]":
+            return {"type": "CLOSE-BRAC_DELI", "value": char}
+        if char == "{":
+            return {"type": "OPEN-CURL-BRAC_DELI", "value": char}
+        if char == "}":
+            return {"type": "CLOSE-CURL-BRAC_DELI", "value": char}
+        if char == ",":
+            return {"type": "COMMA_DELI", "value": char}
     return None
 
 # process a number
@@ -84,7 +77,7 @@ def process_number(input_text, index, previous_token):
         while index < len(input_text) and (input_text[index].isalnum() or input_text[index] == "_"):
             index += 1
         number_value = input_text[start_index:index]
-        return {"type": "INVALID_IDENTIFIER", "value": number_value}, index
+        return {"type": "DIGIT_INVAL_IDEN", "value": number_value}, index
 
     # Otherwise, determine if it's a float or an integer
     number_value = input_text[start_index:index]
@@ -96,7 +89,7 @@ def process_number(input_text, index, previous_token):
             return {"type": "DOUBLE", "value": number_value}, index
     else:
         return {"type": "INTEGER", "value": number_value}, index
-        
+
 # process a word (keyword or identifier)
 def process_word(input_text, index):
     start_index = index
@@ -106,25 +99,73 @@ def process_word(input_text, index):
 
     # Determine if the word is a keyword, identifier, arith_op, or invalid
     if is_keyword(word_value):
-        return generate_keyword(word_value), index
+        if word_value == "int":
+            return {"type": "INT_KEY", "value": word_value}, index
+        if word_value == "float":
+            return {"type": "FLOAT_KEY", "value": word_value}, index
+        if word_value == "double":
+            return {"type": "DOUBLE_KEY", "value": word_value}, index
+        if word_value == "char":
+            return {"type": "CHAR_KEY", "value": word_value}, index
+        if word_value == "bool":
+            return {"type": "BOOL_KEY", "value": word_value}, index
+        if word_value == "string":
+            return {"type": "STRING_KEY", "value": word_value}, index
+        if word_value == "if":
+            return {"type": "IF_KEY", "value": word_value}, index
+        if word_value == "else":
+            return {"type": "ELSE_KEY", "value": word_value}, index
+        if word_value == "for":
+            return {"type": "FOR_KEY", "value": word_value}, index
+        if word_value == "while":
+            return {"type": "WHILE_KEY", "value": word_value}, index
+        if word_value == "break":
+            return {"type": "BREAK_KEY", "value": word_value}, index
+        if word_value == "continue":
+            return {"type": "CONTINUE_KEY", "value": word_value}, index
+        if word_value == "printf":
+            return {"type": "PRINTF_KEY", "value": word_value}, index
+        if word_value == "scanf":
+            return {"type": "SCANF_KEY", "value": word_value}, index
     elif is_res_word(word_value):
-        return generate_res_word(word_value), index
+        if word_value == "gc":
+            return {"type": "GC_KEY", "value": word_value}, index
+        if word_value == "main":
+            return {"type": "MAIN_KEY", "value": word_value}, index
+        if word_value == "malloc":
+            return {"type": "MALLOC_KEY", "value": word_value}, index
     elif is_bool(word_value):
-        return generate_bool(word_value), index
+        if word_value == "True":
+            return {"type": "TRUE_BOOL", "value": word_value}, index
+        if word_value == "False":
+            return {"type": "FALSE_BOOL", "value": word_value}, index
+        if word_value == "TRUE":
+            return {"type": "TRUE_BOOL", "value": word_value}, index
+        if word_value == "FALSE":
+            return {"type": "FALSE_BOOL", "value": word_value}, index
+        if word_value == "true":
+            return {"type": "TRUE_BOOL", "value": word_value}, index
+        if word_value == "false":
+            return {"type": "FALSE_BOOL", "value": word_value}, index
     elif is_noise(word_value):
-        return generate_noise_word(word_value), index
+        if word_value == "boolean":
+            return {"type": "BOOL_NOISE", "value": word_value}, index
+        if word_value == "integer":
+            return {"type": "INT_NOISE", "value": word_value}, index
+        if word_value == "character":
+            return {"type": "CHAR_NOISE", "value": word_value}, index
     elif word_value[0].isdigit():
-        return generate_invalid_identifier(word_value), index
+        return {"type": "DIGIT_INVAL_IDEN", "value": word_value}, index
     elif word_value.startswith("_"):
-        return generate_invalid_identifier(word_value), index
+        return {"type": "UNDER_INVAL_IDEN", "value": word_value}, index
     elif "__" in word_value:
-        return generate_invalid_identifier(word_value), index
+        return {"type": "UNDER_INVAL_IDEN", "value": word_value}, index
     elif any(char in word_value for char in SPECIAL_CHAR):
-        return generate_invalid_identifier(word_value), index
+        return {"type": "SPECIAL_INVAL_IDEN", "value": word_value}, index
     elif word_value.endswith("_"):
-        return generate_invalid_identifier(word_value), index
+        return {"type": "UNDER_INVAL_IDEN", "value": word_value}, index
     else:
-        return generate_identifier(word_value), index
+        return {"type": "IDENTIFIER", "value": word_value}, index
 
 # Process unary and arithmetic operators
 def process_operator(input_text, index, previous_token):
@@ -143,8 +184,10 @@ def process_operator(input_text, index, previous_token):
     # Check if the operator sequence is valid
     if operator_sequence in VALID_OPERATORS:
         # If it's a valid operator, check if it's a unary operator like '++' or '--'
-        if operator_sequence == "++" or operator_sequence == "--":
-            return {"type": "UNARY_OP", "value": operator_sequence}, index
+        if operator_sequence == "++":
+            return {"type": "INCRE_OP", "value": operator_sequence}, index
+        if operator_sequence == "--":
+            return {"type": "DECRE_OP", "value": operator_sequence}, index
 
         # Handle single-line comments ("//")
         if operator_sequence == "//":
@@ -173,52 +216,65 @@ def process_operator(input_text, index, previous_token):
         
         # Check for assignment operators
         elif operator_sequence == "=":
-            return {"type": "ASSIGNMENT_OP", "value": "="}, index 
+            return {"type": "ASSIGN_OP", "value": "="}, index 
         elif operator_sequence == "+=":
-            return {"type": "ASSIGNMENT_OP", "value": "+="}, index
+            return {"type": "PLUS-ASSIGN_OP", "value": "+="}, index
         elif operator_sequence == "-=":
-            return {"type": "ASSIGNMENT_OP", "value": "-="}, index 
+            return {"type": "MINUS-ASSIGN_OP", "value": "-="}, index 
         elif operator_sequence == "*=":
-            return {"type": "ASSIGNMENT_OP", "value": "*="}, index 
+            return {"type": "MULTI-ASSIGN_OP", "value": "*="}, index 
         elif operator_sequence == "/=":
-            return {"type": "ASSIGNMENT_OP", "value": "/="}, index 
+            return {"type": "DIVIDE-ASSIGN_OP", "value": "/="}, index 
         elif operator_sequence == "%=":
-            return {"type": "ASSIGNMENT_OP", "value": "%="}, index
+            return {"type": "MOD-ASSIGN_OP", "value": "%="}, index
 
         # Check for logical operators
         elif operator_sequence == "||":
-            return {"type": "LOGICAL_OP", "value": "||"}, index 
+            return {"type": "OR-LOGIC_OP", "value": "||"}, index 
         elif operator_sequence == "&&":
-            return {"type": "LOGICAL_OP", "value": "&&"}, index 
+            return {"type": "AND-LOGIC_OP", "value": "&&"}, index 
         elif operator_sequence == "!":
-            return {"type": "LOGICAL_OP", "value": "!"}, index
+            return {"type": "NOT-LOGIC_OP", "value": "!"}, index
         
         # Check for relational operators
         elif operator_sequence == "==":
-            return {"type": "RELATIONAL_OP", "value": "=="}, index 
+            return {"type": "EQUAL-REL_OP", "value": "=="}, index 
         elif operator_sequence == "!=":
-            return {"type": "RELATIONAL_OP", "value": "!="}, index 
+            return {"type": "NOT-REL_OP", "value": "!="}, index 
         elif operator_sequence == ">=":
-            return {"type": "RELATIONAL_OP", "value": ">="}, index 
+            return {"type": "GREAT-EQL-REL_OP", "value": ">="}, index 
         elif operator_sequence == "<=":
-            return {"type": "RELATIONAL_OP", "value": "<="}, index 
+            return {"type": "LESS-EQL-REL_OP", "value": "<="}, index 
         elif operator_sequence == ">":
-            return {"type": "RELATIONAL_OP", "value": ">"}, index 
+            return {"type": "LESS-REL_OP", "value": ">"}, index 
         elif operator_sequence == "<":
-            return {"type": "RELATIONAL_OP", "value": "<"}, index 
+            return {"type": "GREAT-REL_OP", "value": "<"}, index 
         
         # Check for unary "+" or "-"
         elif operator_sequence == "+" or operator_sequence == "-":
             # Determine if it should be treated as a unary operator
-            if previous_token == None or previous_token and previous_token["type"] in ["DELIMITER", "ASSIGNMENT_OP", "LOGICAL_OP", "RELATIONAL_OP", "COMMENT_SYMBOL", "KEYWORD", "NOISE_WORD"]:
-                return {"type": "UNARY_OP", "value": operator_sequence}, index 
+            if previous_token == None or previous_token and previous_token["type"] in ["DELIMITER", "ASSIGNMENT_OP", "LOGICAL_OP", 
+                                                                                       "RELATIONAL_OP", "COMMENT_SYMBOL", "KEYWORD", 
+                                                                                       "NOISE_WORD", "ASSIGN_OP"]:
+                if operator_sequence == "+":
+                    return {"type": "UNARY-PLUS_OP", "value": operator_sequence}, index
+                if operator_sequence == "-":
+                    return {"type": "UNARY-MINUS_OP", "value": operator_sequence}, index  
             else:
-                # Otherwise, treat it as an arithmetic operator
-                return {"type": "ARITHMETIC_OP", "value": operator_sequence}, index 
-
-        # check for other arithmetic op
-        elif operator_sequence in ARITH_OPS:
-            return {"type": "ARITHMETIC_OP", "value": operator_sequence}, index 
+                if operator_sequence == "+":
+                    return {"type": "PLUS-ARITH_OP", "value": operator_sequence}, index
+                if operator_sequence == "-":
+                    return {"type": "MINUS-ARITH_OP", "value": operator_sequence}, index
+                if operator_sequence == "*":
+                    return {"type": "MULTI-ARITH_OP", "value": operator_sequence}, index
+                if operator_sequence == "/":
+                    return {"type": "DIV-ARITH_OP", "value": operator_sequence}, index
+                if operator_sequence == "%":
+                    return {"type": "MOD-ARITH_OP", "value": operator_sequence}, index
+                if operator_sequence == "^":
+                    return {"type": "POWER-ARITH_OP", "value": operator_sequence}, index
+                if operator_sequence == "#":
+                    return {"type": "ROOT-ARITH_OP", "value": operator_sequence}, index 
     
     #for invalid operators that are not more than 3
     if operator_sequence and operator_sequence not in VALID_OPERATORS:
@@ -369,6 +425,14 @@ def main():
         
         # Call your lexer function or other processing logic
         tokens = lexer(input_text)  # Replace with your lexer implementation
+
+        # Initialize the parser and parse declarations
+        parser = Parser(tokens)
+        try:
+            while parser.current_token():
+                parser.parse_declaration()
+        except SyntaxError as e:
+            print(f"Syntax Error: {e}")
         
         while True:
             # Ask user for the output CSV file name
