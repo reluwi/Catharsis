@@ -28,28 +28,28 @@ def is_noise(word):
     return word in NOISE_WORDS
 
 # Process a delimiter
-def process_deli(char):
+def process_deli(char, line_number):
     if char in DELI:
         if char == ";":
-            return {"type": "SEMI-COLON_DELI", "value": char}
+            return {"type": "SEMI-COLON_DELI", "value": char, "line_number": line_number}
         if char == "(":
-            return {"type": "OPEN-PAREN_DELI", "value": char}
+            return {"type": "OPEN-PAREN_DELI", "value": char, "line_number": line_number}
         if char == ")":
-            return {"type": "CLOSE-PAREN_DELI", "value": char}
+            return {"type": "CLOSE-PAREN_DELI", "value": char, "line_number": line_number}
         if char == "[":
-            return {"type": "OPEN-BRAC_DELI", "value": char}
+            return {"type": "OPEN-BRAC_DELI", "value": char, "line_number": line_number}
         if char == "]":
-            return {"type": "CLOSE-BRAC_DELI", "value": char}
+            return {"type": "CLOSE-BRAC_DELI", "value": char, "line_number": line_number}
         if char == "{":
-            return {"type": "OPEN-CURL-BRAC_DELI", "value": char}
+            return {"type": "OPEN-CURL-BRAC_DELI", "value": char, "line_number": line_number}
         if char == "}":
-            return {"type": "CLOSE-CURL-BRAC_DELI", "value": char}
+            return {"type": "CLOSE-CURL-BRAC_DELI", "value": char, "line_number": line_number}
         if char == ",":
-            return {"type": "COMMA_DELI", "value": char}
+            return {"type": "COMMA_DELI", "value": char, "line_number": line_number}
     return None
 
 # process a number
-def process_number(input_text, index, previous_token):
+def process_number(input_text, index, line_number):
     start_index = index
     has_dot = False  # Track if the number includes a '.'
 
@@ -77,21 +77,21 @@ def process_number(input_text, index, previous_token):
         while index < len(input_text) and (input_text[index].isalnum() or input_text[index] == "_"):
             index += 1
         number_value = input_text[start_index:index]
-        return {"type": "DIGIT_INVAL_IDEN", "value": number_value}, index
+        return {"type": "DIGIT_INVAL_IDEN", "value": number_value, "line_number": line_number}, index
 
     # Otherwise, determine if it's a float or an integer
     number_value = input_text[start_index:index]
     if has_dot:
         num_after_dots = len(number_value.split('.', 1)[1])
         if(num_after_dots < 8):
-            return {"type": "FLOAT", "value": number_value}, index
+            return {"type": "FLOAT", "value": number_value, "line_number": line_number}, index
         else:
-            return {"type": "DOUBLE", "value": number_value}, index
+            return {"type": "DOUBLE", "value": number_value, "line_number": line_number}, index
     else:
-        return {"type": "INTEGER", "value": number_value}, index
+        return {"type": "INTEGER", "value": number_value, "line_number": line_number}, index
 
 # process a word (keyword or identifier)
-def process_word(input_text, index):
+def process_word(input_text, index, line_number):
     start_index = index
     while index < len(input_text) and (input_text[index].isalnum() or input_text[index] == "_" or input_text[index] in SPECIAL_CHAR):
         index += 1
@@ -100,75 +100,75 @@ def process_word(input_text, index):
     # Determine if the word is a keyword, identifier, arith_op, or invalid
     if is_keyword(word_value):
         if word_value == "int":
-            return {"type": "INT_KEY", "value": word_value}, index
+            return {"type": "INT_KEY", "value": word_value, "line_number": line_number}, index
         if word_value == "float":
-            return {"type": "FLOAT_KEY", "value": word_value}, index
+            return {"type": "FLOAT_KEY", "value": word_value, "line_number": line_number}, index
         if word_value == "double":
-            return {"type": "DOUBLE_KEY", "value": word_value}, index
+            return {"type": "DOUBLE_KEY", "value": word_value, "line_number": line_number}, index
         if word_value == "char":
-            return {"type": "CHAR_KEY", "value": word_value}, index
+            return {"type": "CHAR_KEY", "value": word_value, "line_number": line_number}, index
         if word_value == "bool":
-            return {"type": "BOOL_KEY", "value": word_value}, index
+            return {"type": "BOOL_KEY", "value": word_value, "line_number": line_number}, index
         if word_value == "string":
-            return {"type": "STRING_KEY", "value": word_value}, index
+            return {"type": "STRING_KEY", "value": word_value, "line_number": line_number}, index
         if word_value == "if":
-            return {"type": "IF_KEY", "value": word_value}, index
+            return {"type": "IF_KEY", "value": word_value, "line_number": line_number}, index
         if word_value == "else":
-            return {"type": "ELSE_KEY", "value": word_value}, index
+            return {"type": "ELSE_KEY", "value": word_value, "line_number": line_number}, index
         if word_value == "for":
-            return {"type": "FOR_KEY", "value": word_value}, index
+            return {"type": "FOR_KEY", "value": word_value, "line_number": line_number}, index
         if word_value == "while":
-            return {"type": "WHILE_KEY", "value": word_value}, index
+            return {"type": "WHILE_KEY", "value": word_value, "line_number": line_number}, index
         if word_value == "break":
-            return {"type": "BREAK_KEY", "value": word_value}, index
+            return {"type": "BREAK_KEY", "value": word_value, "line_number": line_number}, index
         if word_value == "continue":
-            return {"type": "CONTINUE_KEY", "value": word_value}, index
+            return {"type": "CONTINUE_KEY", "value": word_value, "line_number": line_number}, index
         if word_value == "printf":
-            return {"type": "PRINTF_KEY", "value": word_value}, index
+            return {"type": "PRINTF_KEY", "value": word_value, "line_number": line_number}, index
         if word_value == "scanf":
-            return {"type": "SCANF_KEY", "value": word_value}, index
+            return {"type": "SCANF_KEY", "value": word_value, "line_number": line_number}, index
     elif is_res_word(word_value):
         if word_value == "gc":
-            return {"type": "GC_KEY", "value": word_value}, index
+            return {"type": "GC_KEY", "value": word_value, "line_number": line_number}, index
         if word_value == "main":
-            return {"type": "MAIN_KEY", "value": word_value}, index
+            return {"type": "MAIN_KEY", "value": word_value, "line_number": line_number}, index
         if word_value == "malloc":
-            return {"type": "MALLOC_KEY", "value": word_value}, index
+            return {"type": "MALLOC_KEY", "value": word_value, "line_number": line_number}, index
     elif is_bool(word_value):
         if word_value == "True":
-            return {"type": "TRUE_BOOL", "value": word_value}, index
+            return {"type": "TRUE_BOOL", "value": word_value, "line_number": line_number}, index
         if word_value == "False":
-            return {"type": "FALSE_BOOL", "value": word_value}, index
+            return {"type": "FALSE_BOOL", "value": word_value, "line_number": line_number}, index
         if word_value == "TRUE":
-            return {"type": "TRUE_BOOL", "value": word_value}, index
+            return {"type": "TRUE_BOOL", "value": word_value, "line_number": line_number}, index
         if word_value == "FALSE":
-            return {"type": "FALSE_BOOL", "value": word_value}, index
+            return {"type": "FALSE_BOOL", "value": word_value, "line_number": line_number}, index
         if word_value == "true":
-            return {"type": "TRUE_BOOL", "value": word_value}, index
+            return {"type": "TRUE_BOOL", "value": word_value, "line_number": line_number}, index
         if word_value == "false":
-            return {"type": "FALSE_BOOL", "value": word_value}, index
+            return {"type": "FALSE_BOOL", "value": word_value, "line_number": line_number}, index
     elif is_noise(word_value):
         if word_value == "boolean":
-            return {"type": "BOOL_NOISE", "value": word_value}, index
+            return {"type": "BOOL_NOISE", "value": word_value, "line_number": line_number}, index
         if word_value == "integer":
-            return {"type": "INT_NOISE", "value": word_value}, index
+            return {"type": "INT_NOISE", "value": word_value, "line_number": line_number}, index
         if word_value == "character":
-            return {"type": "CHAR_NOISE", "value": word_value}, index
+            return {"type": "CHAR_NOISE", "value": word_value, "line_number": line_number}, index
     elif word_value[0].isdigit():
-        return {"type": "DIGIT_INVAL_IDEN", "value": word_value}, index
+        return {"type": "DIGIT_INVAL_IDEN", "value": word_value, "line_number": line_number}, index
     elif word_value.startswith("_"):
-        return {"type": "UNDER_INVAL_IDEN", "value": word_value}, index
+        return {"type": "UNDER_INVAL_IDEN", "value": word_value, "line_number": line_number}, index
     elif "__" in word_value:
-        return {"type": "UNDER_INVAL_IDEN", "value": word_value}, index
+        return {"type": "UNDER_INVAL_IDEN", "value": word_value, "line_number": line_number}, index
     elif any(char in word_value for char in SPECIAL_CHAR):
-        return {"type": "SPECIAL_INVAL_IDEN", "value": word_value}, index
+        return {"type": "SPECIAL_INVAL_IDEN", "value": word_value, "line_number": line_number}, index
     elif word_value.endswith("_"):
-        return {"type": "UNDER_INVAL_IDEN", "value": word_value}, index
+        return {"type": "UNDER_INVAL_IDEN", "value": word_value, "line_number": line_number}, index
     else:
-        return {"type": "IDENTIFIER", "value": word_value}, index
+        return {"type": "IDENTIFIER", "value": word_value, "line_number": line_number}, index
 
 # Process unary and arithmetic operators
-def process_operator(input_text, index, previous_token):
+def process_operator(input_text, index, previous_token, line_number):
     VALID_OPERATORS = ["*", "/", "%", "^", "#", "=", "!", "&&", "||", "+", "-", "++", "--", "&",
                        "//", "/*", "*/", "+=", "-=", "/=", "*=", "%=", "==", "!=", ">=", "<=", ">", "<"]
     
@@ -185,9 +185,9 @@ def process_operator(input_text, index, previous_token):
     if operator_sequence in VALID_OPERATORS:
         # If it's a valid operator, check if it's a unary operator like '++' or '--'
         if operator_sequence == "++":
-            return {"type": "INCRE_OP", "value": operator_sequence}, index
+            return {"type": "INCRE_OP", "value": operator_sequence, "line_number": line_number}, index
         if operator_sequence == "--":
-            return {"type": "DECRE_OP", "value": operator_sequence}, index
+            return {"type": "DECRE_OP", "value": operator_sequence, "line_number": line_number}, index
 
         # Handle single-line comments ("//")
         if operator_sequence == "//":
@@ -195,7 +195,7 @@ def process_operator(input_text, index, previous_token):
             while index < len(input_text) and input_text[index] != "\n":
                 index += 1
             comment_value = input_text[start_index:index]
-            return {"type": "SINGLE_LINE_COMMENT", "value": comment_value}, index 
+            return {"type": "SINGLE_LINE_COMMENT", "value": comment_value, "line_number": line_number}, index 
         
         # Handle multi-line comments ("/* */")
         elif operator_sequence == "/*":
@@ -208,47 +208,47 @@ def process_operator(input_text, index, previous_token):
             if index < len(input_text):  # If "*/" is found
                 index += 2
             comment_value = "/*" + comment_value + "*/"  # Add the delimiters back
-            return {"type": "MULIT_LINE_COMMENT", "value": comment_value}, index
+            return {"type": "MULIT_LINE_COMMENT", "value": comment_value, "line_number": line_number}, index
         
         # Check for address operator
         elif operator_sequence == "&":
-            return {"type": "ADDRESS_OP", "value": "&"}, index
+            return {"type": "ADDRESS_OP", "value": "&", "line_number": line_number}, index
         
         # Check for assignment operators
         elif operator_sequence == "=":
-            return {"type": "ASSIGN_OP", "value": "="}, index 
+            return {"type": "ASSIGN_OP", "value": "=", "line_number": line_number}, index 
         elif operator_sequence == "+=":
-            return {"type": "PLUS-ASSIGN_OP", "value": "+="}, index
+            return {"type": "PLUS-ASSIGN_OP", "value": "+=", "line_number": line_number}, index
         elif operator_sequence == "-=":
-            return {"type": "MINUS-ASSIGN_OP", "value": "-="}, index 
+            return {"type": "MINUS-ASSIGN_OP", "value": "-=", "line_number": line_number}, index 
         elif operator_sequence == "*=":
-            return {"type": "MULTI-ASSIGN_OP", "value": "*="}, index 
+            return {"type": "MULTI-ASSIGN_OP", "value": "*=", "line_number": line_number}, index 
         elif operator_sequence == "/=":
-            return {"type": "DIVIDE-ASSIGN_OP", "value": "/="}, index 
+            return {"type": "DIVIDE-ASSIGN_OP", "value": "/=", "line_number": line_number}, index 
         elif operator_sequence == "%=":
-            return {"type": "MOD-ASSIGN_OP", "value": "%="}, index
+            return {"type": "MOD-ASSIGN_OP", "value": "%=", "line_number": line_number}, index
 
         # Check for logical operators
         elif operator_sequence == "||":
-            return {"type": "OR-LOGIC_OP", "value": "||"}, index 
+            return {"type": "OR-LOGIC_OP", "value": "||", "line_number": line_number}, index 
         elif operator_sequence == "&&":
-            return {"type": "AND-LOGIC_OP", "value": "&&"}, index 
+            return {"type": "AND-LOGIC_OP", "value": "&&", "line_number": line_number}, index 
         elif operator_sequence == "!":
-            return {"type": "NOT-LOGIC_OP", "value": "!"}, index
+            return {"type": "NOT-LOGIC_OP", "value": "!", "line_number": line_number}, index
         
         # Check for relational operators
         elif operator_sequence == "==":
-            return {"type": "EQUAL-REL_OP", "value": "=="}, index 
+            return {"type": "EQUAL-REL_OP", "value": "==", "line_number": line_number}, index 
         elif operator_sequence == "!=":
-            return {"type": "NOT-REL_OP", "value": "!="}, index 
+            return {"type": "NOT-REL_OP", "value": "!=", "line_number": line_number}, index 
         elif operator_sequence == ">=":
-            return {"type": "GREAT-EQL-REL_OP", "value": ">="}, index 
+            return {"type": "GREAT-EQL-REL_OP", "value": ">=", "line_number": line_number}, index 
         elif operator_sequence == "<=":
-            return {"type": "LESS-EQL-REL_OP", "value": "<="}, index 
+            return {"type": "LESS-EQL-REL_OP", "value": "<=", "line_number": line_number}, index 
         elif operator_sequence == ">":
-            return {"type": "LESS-REL_OP", "value": ">"}, index 
+            return {"type": "LESS-REL_OP", "value": ">", "line_number": line_number}, index 
         elif operator_sequence == "<":
-            return {"type": "GREAT-REL_OP", "value": "<"}, index 
+            return {"type": "GREAT-REL_OP", "value": "<", "line_number": line_number}, index 
         
         # Check for unary "+" or "-"
         elif operator_sequence == "+" or operator_sequence == "-":
@@ -257,37 +257,37 @@ def process_operator(input_text, index, previous_token):
                                                                                        "RELATIONAL_OP", "COMMENT_SYMBOL", "KEYWORD", 
                                                                                        "NOISE_WORD", "ASSIGN_OP"]:
                 if operator_sequence == "+":
-                    return {"type": "UNARY-PLUS_OP", "value": operator_sequence}, index
+                    return {"type": "UNARY-PLUS_OP", "value": operator_sequence, "line_number": line_number}, index
                 if operator_sequence == "-":
-                    return {"type": "UNARY-MINUS_OP", "value": operator_sequence}, index  
+                    return {"type": "UNARY-MINUS_OP", "value": operator_sequence, "line_number": line_number}, index  
             else:
                 if operator_sequence == "+":
-                    return {"type": "PLUS-ARITH_OP", "value": operator_sequence}, index
+                    return {"type": "PLUS-ARITH_OP", "value": operator_sequence, "line_number": line_number}, index
                 if operator_sequence == "-":
-                    return {"type": "MINUS-ARITH_OP", "value": operator_sequence}, index
+                    return {"type": "MINUS-ARITH_OP", "value": operator_sequence, "line_number": line_number}, index
                 if operator_sequence == "*":
-                    return {"type": "MULTI-ARITH_OP", "value": operator_sequence}, index
+                    return {"type": "MULTI-ARITH_OP", "value": operator_sequence, "line_number": line_number}, index
                 if operator_sequence == "/":
-                    return {"type": "DIV-ARITH_OP", "value": operator_sequence}, index
+                    return {"type": "DIV-ARITH_OP", "value": operator_sequence, "line_number": line_number}, index
                 if operator_sequence == "%":
-                    return {"type": "MOD-ARITH_OP", "value": operator_sequence}, index
+                    return {"type": "MOD-ARITH_OP", "value": operator_sequence, "line_number": line_number}, index
                 if operator_sequence == "^":
-                    return {"type": "POWER-ARITH_OP", "value": operator_sequence}, index
+                    return {"type": "POWER-ARITH_OP", "value": operator_sequence, "line_number": line_number}, index
                 if operator_sequence == "#":
-                    return {"type": "ROOT-ARITH_OP", "value": operator_sequence}, index 
+                    return {"type": "ROOT-ARITH_OP", "value": operator_sequence, "line_number": line_number}, index 
     
     #for invalid operators that are not more than 3
     if operator_sequence and operator_sequence not in VALID_OPERATORS:
-        return {"type": "UNRECOGNIZED_OPERATOR", "value": operator_sequence}, index
+        return {"type": "UNRECOGNIZED_OPERATOR", "value": operator_sequence, "line_number": line_number}, index
 
     # If the operator sequence exceeds valid length, it's unrecognized
     if len(operator_sequence) > 2:  # Check if it's more than two consecutive symbols
-        return {"type": "UNRECOGNIZED_OPERATOR", "value": operator_sequence}, index
+        return {"type": "UNRECOGNIZED_OPERATOR", "value": operator_sequence, "line_number": line_number}, index
 
     return None, index
 
 # process char and string
-def process_quotes(input_text, index):
+def process_quotes(input_text, index, line_number):
     quote_type = input_text[index]  # Either single or double quote
     start_index = index
     index += 1  # Move past the opening quote
@@ -300,11 +300,11 @@ def process_quotes(input_text, index):
         if char == quote_type:
             index += 1  # Move past the closing quote
             if len(content) == 0:
-                return {"type": "EMPTY_STRING", "value": content}, index
+                return {"type": "EMPTY_STRING", "value": content, "line_number": line_number}, index
             if len(content) == 1:
-                return {"type": "CHAR", "value": content}, index
+                return {"type": "CHAR", "value": content, "line_number": line_number}, index
             else:
-                return {"type": "STRING", "value": content}, index
+                return {"type": "STRING", "value": content, "line_number": line_number}, index
         
         if char == "\n":
             break
@@ -315,7 +315,7 @@ def process_quotes(input_text, index):
 
     # If no closing quote is found, it's an invalid string or char
     if(char == "\n"):
-        return {"type": "INVALID_CHAR/STRING", "value": input_text[start_index:index]}, index
+        return {"type": "INVALID_CHAR/STRING", "value": input_text[start_index:index], "line_number": line_number}, index
 
 # main lexer function    
 def lexer(input_text):
@@ -323,9 +323,23 @@ def lexer(input_text):
     tokens = []
     length = len(input_text)
     previous_token = None
+    line_number = 1  # Track the current line number
+    first_loop = True  # Flag to track the first loop execution
 
     while index < len(input_text):
         char = input_text[index]
+        
+        if first_loop and char == "\n":
+            line_number += 1 
+            index += 1
+            first_loop = False
+            continue
+
+        # Handle Newlines (Only Tokenize EMPTY LINES)
+        if char == "\n":
+            line_number += 1
+            index += 1
+            continue
 
         # Skip whitespace
         if char.isspace():
@@ -334,22 +348,25 @@ def lexer(input_text):
         
         # Handle quotes (single and double)
         if char in ["'", '"']:
-            token, index = process_quotes(input_text, index)
+            token, index = process_quotes(input_text, index, line_number)
+            token["line_number"] = line_number  # Store the line number
             tokens.append(token)
             previous_token = token
             continue
 
         # Handle delimiters
-        delimiter_token = process_deli(char)
+        delimiter_token = process_deli(char, line_number)
         if delimiter_token:
+            delimiter_token["line_number"] = line_number
             tokens.append(delimiter_token)
             previous_token = delimiter_token  # Update previous_token
             index += 1
             continue
         
         # Handle unary and arithmetic operators
-        un_op_token, new_index = process_operator(input_text, index, previous_token)
+        un_op_token, new_index = process_operator(input_text, index, previous_token, line_number)
         if un_op_token:
+            un_op_token["line_number"] = line_number
             tokens.append(un_op_token)
             previous_token = un_op_token
             index = new_index
@@ -357,7 +374,8 @@ def lexer(input_text):
 
         # Process numbers and float
         elif char.isdigit() or (char == "." and index + 1 < length and input_text[index + 1].isdigit()):
-            token, new_index = process_number(input_text, index, previous_token)
+            token, new_index = process_number(input_text, index, line_number)
+            token["line_number"] = line_number
             tokens.append(token)
             previous_token = token
             index = new_index
@@ -365,14 +383,15 @@ def lexer(input_text):
 
         # Process words (keywords, reserved words, identifiers, or invalid identifiers)
         elif char.isalpha() or char == "_" or input_text[index] in SPECIAL_CHAR:
-            token, index = process_word(input_text, index)
+            token, index = process_word(input_text, index, line_number)
+            token["line_number"] = line_number
             tokens.append(token)
             previous_token = token
             continue
 
         # Handle unrecognized characters
         else:
-            print(f"Warning: Unrecognized character '{char}' at index {index}")
+            print(f"Warning: Unrecognized character '{char}' at index {index}, line {line_number}")
             index += 1
 
     return tokens
@@ -394,13 +413,15 @@ def write_tokens_to_csv(tokens, filename="LexOutput.csv"):
         writer = csv.writer(file)
         
         # Write the header
-        writer.writerow(["Token Value", "Token Type"])
+        writer.writerow(["Line Number", "Token Value", "Token Type"])
         
         # Write the tokens
         for token in tokens:
             token_type = token["type"]
             token_value = token["value"]
-            writer.writerow([token_value, token_type]) 
+            line_number = token.get("line_number", "Unknown")
+
+            writer.writerow([line_number, token_value, token_type]) 
     
     print(f"Tokens successfully written to {filename}")
     return True
@@ -408,7 +429,7 @@ def write_tokens_to_csv(tokens, filename="LexOutput.csv"):
 def main():
     while True:
         try:
-            # Ask user for the input file name
+            # Ask user for the input file name for lexical analysis
             input_filename = input("Enter the name of the .cat file to process: ").strip()
             
             # Validate the input file name
@@ -419,34 +440,76 @@ def main():
             print(f"An unexpected error occurred: {e}")
     
     try:
-        # Open and process the file (if valid)
+        # Open and process the .cat file
         with open(input_filename, 'r') as file:
             input_text = file.read()
         
-        # Call your lexer function or other processing logic
-        tokens = lexer(input_text)  # Replace with your lexer implementation
+        # Call your lexer function to generate tokens
+        tokens = lexer(input_text)
 
-        # Initialize the parser and parse declarations
-        parser = Parser(tokens)
-        try:
-            while parser.current_token():
-                parser.parse_declaration()
-        except SyntaxError as e:
-            print(f"Syntax Error: {e}")
-        
+        # Save tokens to a user-specified CSV file
         while True:
-            # Ask user for the output CSV file name
             output_filename = input("Enter the name of the CSV file to save the tokens (e.g., tokens.csv): ").strip()
-            
-            # Ensure it has a .csv extension
             if not output_filename.endswith('.csv'):
                 print("Invalid file extension. Please provide a filename ending with '.csv'.")
                 continue
             
             # Write tokens to the specified CSV file
             write_tokens_to_csv(tokens, output_filename)
-            break  # Exit the loop once the tokens are written successfully
+            break
 
+        # Loop to ask for a valid CSV file to load tokens for parsing
+        while True:
+            try:
+                parse_filename = input("Enter the name of the CSV file to load tokens for parsing: ").strip()
+
+                # Ensure the file exists
+                if not os.path.isfile(parse_filename):
+                    print(f"File not found: {parse_filename}. Please try again.")
+                    continue
+
+                tokens_from_csv = []
+
+                # Read the tokens from the CSV file
+                with open(parse_filename, mode="r", encoding="utf-8") as csvfile:
+                    reader = csv.reader(csvfile)
+                    next(reader, None)  # Skip header row if present
+
+                    for row in reader:
+                        if len(row) < 3:
+                            print(f"Warning: Skipping malformed CSV row: {row}")
+                            continue  # Skip malformed rows
+
+                        try:
+                            line_number = int(row[0])  # Convert to integer safely
+                        except ValueError:
+                            print(f"Warning: Invalid line number '{row[0]}' in CSV. Skipping row.")
+                            continue
+
+                        tokens_from_csv.append({
+                            "line_number": line_number,
+                            "value": row[1],
+                            "type": row[2]
+                        })
+
+                if not tokens_from_csv:
+                    print("Error: No valid tokens found in the CSV file.")
+                    continue
+
+                # Initialize the parser and parse the tokens
+                parser = Parser(tokens_from_csv)
+
+                while parser.current_token():
+                    try:
+                        parser.parse_declaration()
+                    except SyntaxError as e:
+                        print(f"error: {e}")  # Print error with line number
+                        parser.parse_declaration()
+
+                break  # Exit loop after successful parsing
+            except Exception as e:
+                print(f"An unexpected error occurred: {e}")
+                
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
 
