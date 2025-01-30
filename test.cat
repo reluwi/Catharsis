@@ -1,5 +1,5 @@
-int asdas = 3;
+int x, y, z;
 
-int asdda = 5
+int num = 3;
 
-float num = 4.5;
+int x = y;

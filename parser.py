@@ -26,48 +26,58 @@ class Parser:
         """
         Parses a declaration statement (e.g., int x = 5;).
         """            
-        
         token = self.current_token()
+        if not token:
+            return  # End of tokens
 
         line_number = token["line_number"]
 
         # Step 1: Check for a valid type keyword (int, float, etc.)
-        if token and token["type"] in ["INT_KEY", "FLOAT_KEY", "DOUBLE_KEY", "CHAR_KEY", "BOOL_KEY", "STRING_KEY"]:
-            declaration_type = token["value"]
-            self.next_token()
+        if token["type"] not in ["INT_KEY", "FLOAT_KEY", "DOUBLE_KEY", "CHAR_KEY", "BOOL_KEY", "STRING_KEY"]:
+            raise SyntaxError("Expected a type keyword at the beginning of the declaration.", line_number)
+        
+        declaration_type = token["value"]
+        self.next_token()
 
+        variables = []
+
+        while True:
             # Step 2: Check for a valid identifier
             token = self.current_token()
-            if token and token["type"] == "IDENTIFIER":
-                identifier = token["value"]
-                self.next_token()
-
-                # Step 3: Check for an optional assignment or a semicolon
-                token = self.current_token()
-                if token and token["type"] == "ASSIGN_OP":  # Handle assignment
-                    self.next_token()
-                    token = self.current_token()
-
-                    # Check if the next token is a valid value type (e.g., INTEGER, FLOAT, etc.)
-                    if token and token["type"] in ["INTEGER", "FLOAT", "DOUBLE", "CHAR", "STRING", "BOOLEAN"]:
-                        value = token["value"]
-                        self.next_token()
-                        token = self.current_token()
-
-                        if token and token["type"] == "SEMI-COLON_DELI":
-                            print(f"Valid variable declaration: {declaration_type} {identifier} = {value}; (Line {line_number})")
-                            self.next_token()
-                        else:
-                            raise SyntaxError("Missing semicolon at the end of the declaration.", line_number)
-                    else:
-                        raise SyntaxError("Expected a valid value after assignment.", line_number)
-                elif token and token["type"] == "SEMI-COLON_DELI":  # Handle without assignment
-                    print(f"Valid variable declaration: {declaration_type} {identifier}; (Line {line_number})")
-                    self.next_token()
-                else:
-                    raise SyntaxError("Invalid variable declaration syntax.", line_number)
-            else:
+            if token and token["type"] != "IDENTIFIER":
                 raise SyntaxError("Expected an identifier after the type.", line_number)
-        else:
-            raise SyntaxError("Expected a type keyword at the beginning of the declaration.", line_number)
+            
+            identifier = token["value"]
+            self.next_token()
+
+            # Step 3: Check for an optional assignment or a semicolon
+            token = self.current_token()
+            if token and token["type"] in ["ASSIGN_OP", "PLUS-ASSIGN_OP", "MINUS-ASSIGN_OP", "MULTI-ASSIGN_OP", "DIVIDE-ASSIGN_OP", "MOD-ASSIGN_OP"]:  # Handle assignment
+                self.next_token()
+                token = self.current_token()
+
+                # Ensure a valid value follows the assignment
+                if not token or token["type"] not in ["INTEGER", "FLOAT", "DOUBLE", "CHAR", "STRING", "TRUE_BOOL", "FALSE_BOOL", "IDENTIFIER"]:
+                    raise SyntaxError("Expected a valid value after assignment.", line_number)
+                value = token["value"]
+                variables.append(f"{identifier} = {value}")
+                self.next_token()   
+            else:
+                variables.append(identifier)  # Just store the variable name
+            
+            # Step 4: Check for a comma (more variables) or semicolon (end of declaration)
+            token = self.current_token()
+            if token and token["type"] == "COMMA_DELI":
+                self.next_token()  # Move to the next variable
+                continue  # Continue processing more variables
+            elif token and token["type"] == "SEMI-COLON_DELI":  
+                break  # End of declaration
+            else:
+                raise SyntaxError("Missing semicolon at the end of the declaration.", line_number)
+        identifier_list = " , ".join(variables)
+        print(f"Valid variable declaration: {declaration_type} {identifier_list}; (Line {line_number})")
+        self.next_token()  # Move to the next token after semicolon
+
+
+        
             
