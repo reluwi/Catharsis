@@ -1,7 +1,7 @@
+int num = 3;
+
+for(int i = 0; i > 10; i++) {
+    int num;
+}
+
 int x, y, z;
-
-int num = 3
-
-int x = y;
-
-int = 3

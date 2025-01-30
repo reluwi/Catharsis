@@ -501,7 +501,11 @@ def main():
 
                 while parser.current_token():
                     try:
-                        parser.parse_declaration()
+                        token = parser.current_token()
+                        if token["type"] == "FOR_KEY":
+                            parser.parse_for_loop()
+                        else:
+                            parser.parse_declaration()
                     except SyntaxError as e:
                         print(f"error: {e}")  # Print error with line number
                         parser.skip_to_next_statement()
