@@ -504,7 +504,8 @@ def main():
                         parser.parse_declaration()
                     except SyntaxError as e:
                         print(f"error: {e}")  # Print error with line number
-                        parser.next_token()
+                        parser.skip_to_next_statement()
+                        continue
 
                 break  # Exit loop after successful parsing
             except Exception as e:

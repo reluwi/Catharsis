@@ -22,6 +22,25 @@ class Parser:
             return self.current_token()  # Return the next non-NEWLINE token
         return None  # End of tokens
 
+    def skip_to_next_statement(self):
+        """
+        Skips tokens until a semicolon or a new declaration keyword is found.
+        This prevents infinite loops when encountering syntax errors.
+        """
+        while self.current_token():
+            token = self.current_token()
+
+            # If we find a semicolon, move past it and stop skipping
+            if token["type"] == "SEMI-COLON_DELI":
+                print(f"Stopping at: {token['value']}")  # Debugging output
+                self.next_token()
+                return  
+            # If we find a new valid declaration keyword (int, float, etc.), stop skipping
+            if token["type"] in ["INT_KEY", "FLOAT_KEY", "DOUBLE_KEY", "CHAR_KEY", "BOOL_KEY", "STRING_KEY"]:
+                return
+
+            self.next_token()  # Skip unrecognized tokens
+
     def parse_declaration(self):
         """
         Parses a declaration statement (e.g., int x = 5;).
@@ -45,6 +64,7 @@ class Parser:
             # Step 2: Check for a valid identifier
             token = self.current_token()
             if token and token["type"] != "IDENTIFIER":
+                self.skip_to_next_statement()  # Skip to next statement after error
                 raise SyntaxError("Expected an identifier after the type.", line_number)
             
             identifier = token["value"]
@@ -58,7 +78,9 @@ class Parser:
 
                 # Ensure a valid value follows the assignment
                 if not token or token["type"] not in ["INTEGER", "FLOAT", "DOUBLE", "CHAR", "STRING", "TRUE_BOOL", "FALSE_BOOL", "IDENTIFIER"]:
+                    self.skip_to_next_statement()  # Skip to next statement after error
                     raise SyntaxError("Expected a valid value after assignment.", line_number)
+                
                 value = token["value"]
                 variables.append(f"{identifier} = {value}")
                 self.next_token()   
@@ -73,8 +95,12 @@ class Parser:
             elif token and token["type"] == "SEMI-COLON_DELI":  
                 break  # End of declaration
             else:
+                #self.next_token()
+                #token = self.current_token()
+                self.skip_to_next_statement()
                 raise SyntaxError("Missing semicolon at the end of the declaration.", line_number)
-        identifier_list = " , ".join(variables)
+        
+        identifier_list = ", ".join(variables)
         print(f"Valid variable declaration: {declaration_type} {identifier_list}; (Line {line_number})")
         self.next_token()  # Move to the next token after semicolon
 
