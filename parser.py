@@ -121,7 +121,7 @@ class Parser:
                 #self.next_token()
                 #token = self.current_token()
                 self.skip_to_next_declaration()
-                raise SyntaxError("Missing semicolon or Assignment Operator at the end of the declaration.", line_number)
+                raise SyntaxError("Missing semicolon at the end of the declaration.", line_number)
         
         identifier_list = ", ".join(variables)
         print(f"Valid variable declaration: {declaration_type} {identifier_list}; (Line {line_number})")

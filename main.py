@@ -495,9 +495,16 @@ def main():
                 if not tokens_from_csv:
                     print("Error: No valid tokens found in the CSV file.")
                     continue
+                
+                # Ask user for the CSV file to save errors
+                error_filename = input("Enter the name of the CSV file to save parsing errors: ").strip()
+                if not error_filename.endswith(".csv"):
+                    print("Invalid file extension. Please provide a filename ending with '.csv'.")
+                    continue
 
                 # Initialize the parser and parse the tokens
                 parser = Parser(tokens_from_csv)
+                errors = []  # Store errors
 
                 while parser.current_token():
                     try:
@@ -508,8 +515,22 @@ def main():
                             parser.parse_declaration()
                     except SyntaxError as e:
                         print(f"error: {e}")  # Print error with line number
+                        errors.append(str(e))  # Store error
                         continue
 
+                # Write errors to CSV file
+                with open(error_filename, mode="w", newline="", encoding="utf-8") as error_file:
+                    writer = csv.writer(error_file)
+                    writer.writerow(["Error Message"])  # Header
+
+                    if errors:
+                        for error in errors:
+                            writer.writerow([error])
+                        writer.writerow([f"Total Errors: {len(errors)}"])  # Error count
+                    else:
+                        writer.writerow(["No errors found."])
+                print(f"Errors successfully written to {error_filename}")
+                
                 break  # Exit loop after successful parsing
             except Exception as e:
                 print(f"An unexpected error occurred: {e}")
