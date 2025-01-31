@@ -1,6 +1,8 @@
 int num = 3;
 
-for(int i = 0; i > 10; i++) {
+string name = "RENZO";
+
+for(int i = 3; i > 10; i++) {
     int num;
 }
 
