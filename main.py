@@ -507,16 +507,16 @@ def main():
                 errors = []  # Store errors
 
                 while parser.current_token():
-                    try:
-                        token = parser.current_token()
-                        if token["type"] == "FOR_KEY":
-                            parser.parse_for_loop()
-                        else:
-                            parser.parse_declaration()
-                    except SyntaxError as e:
-                        print(f"error: {e}")  # Print error with line number
-                        errors.append(str(e))  # Store error
-                        continue
+                    token = parser.current_token()
+                    if token["type"] == "FOR_KEY":
+                        result = parser.parse_for_loop()
+                        if result:  # ✅ Ensure result is not None
+                            errors += result
+                    else:
+                        result = parser.parse_declaration()
+                        if result:  # ✅ Ensure result is not None
+                            errors += result
+        
 
                 # Write errors to CSV file
                 with open(error_filename, mode="w", newline="", encoding="utf-8") as error_file:

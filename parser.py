@@ -70,13 +70,16 @@ class Parser:
         """            
         token = self.current_token()
         if not token:
-            return  # End of tokens
+            return []  # Return empty error list if no token
 
         line_number = token["line_number"]
+        errors = []  # Store errors locally
 
         # Step 1: Check for a valid type keyword (int, float, etc.)
         if token["type"] not in ["INT_KEY", "FLOAT_KEY", "DOUBLE_KEY", "CHAR_KEY", "BOOL_KEY", "STRING_KEY"]:
-            raise SyntaxError("Expected a type keyword at the beginning of the declaration.", line_number)
+            errors.append(f"❌ Syntax Error on line {line_number}: Expected a type keyword at the beginning of the declaration.")
+            self.skip_to_next_declaration()  # Move past faulty declaration
+            return errors
         
         declaration_type = token["value"]
         self.next_token()
@@ -87,8 +90,9 @@ class Parser:
             # Step 2: Check for a valid identifier
             token = self.current_token()
             if token and token["type"] != "IDENTIFIER":
-                self.skip_to_next_declaration()  # Skip to next statement after error
-                raise SyntaxError("Expected an identifier after the type.", line_number)
+                errors.append(f"❌ Syntax Error on line {line_number}: Expected an identifier after the type.")
+                self.skip_to_next_declaration()
+                return errors 
             
             identifier = token["value"]
             self.next_token()
@@ -101,8 +105,9 @@ class Parser:
 
                 # Ensure a valid value follows the assignment
                 if not token or token["type"] not in ["INTEGER", "FLOAT", "DOUBLE", "CHAR", "STRING", "TRUE_BOOL", "FALSE_BOOL", "IDENTIFIER"]:
-                    self.skip_to_next_declaration()  # Skip to next statement after error
-                    raise SyntaxError("Expected a valid value after assignment.", line_number)
+                    errors.append(f"❌ Syntax Error on line {line_number}: Expected a valid value after assignment.")
+                    self.skip_to_next_declaration()
+                    return errors
                 
                 value = token["value"]
                 variables.append(f"{identifier} = {value}")
@@ -118,32 +123,40 @@ class Parser:
             elif token and token["type"] == "SEMI-COLON_DELI":  
                 break  # End of declaration
             else:
-                #self.next_token()
-                #token = self.current_token()
+                errors.append(f"❌ Syntax Error on line {line_number}: Missing semicolon at the end of the declaration.")
                 self.skip_to_next_declaration()
-                raise SyntaxError("Missing semicolon at the end of the declaration.", line_number)
+                return errors
         
         identifier_list = ", ".join(variables)
         print(f"Valid variable declaration: {declaration_type} {identifier_list}; (Line {line_number})")
         self.next_token()  # Move to the next token after semicolon
+
+        return errors  # Return collected errors
 
     def parse_for_loop(self):
         """
         Parses a 'for' loop statement following:
         <For_Loop> ::= "for" "("<Init> ";" <Condition> ";" <Update> ")" <Body>
         """
+        errors = []  # Store errors locally
         token = self.current_token()
+        if not token:
+            return []  # ✅ Return an empty list if no token
+
         line_number = token["line_number"]
 
         if not token or token["type"] != "FOR_KEY":
-            raise SyntaxError("❌ Expected 'for' keyword.", line_number)
+            errors.append(f"❌ Syntax Error on line {line_number}: Expected 'for' keyword.")
+            return errors 
 
         self.next_token()  # Move past 'for'
         
         # Expect '('
         token = self.current_token()
         if not token or token["type"] != "OPEN-PAREN_DELI":
-            raise SyntaxError("❌ Expected '(' after 'for'.", line_number)
+            self.skip_to_next_for_loop()
+            errors.append(f"❌ Syntax Error on line {line_number}: Expected '(' after 'for'.")
+            return errors 
         
         self.next_token()  # Move past '('
 
@@ -155,7 +168,6 @@ class Parser:
 
             token = self.current_token()
             if token["type"] == "IDENTIFIER":
-                #raise SyntaxError("❌ Expected an identifier after type in initialization.", line_number)
                 self.next_token()
                 token = self.current_token()
 
@@ -166,22 +178,29 @@ class Parser:
                     token = self.current_token()
 
                     if not token or token["type"] not in ["INTEGER", "FLOAT", "DOUBLE", "CHAR", "STRING"]:
-                        raise SyntaxError("❌ Expected a value after '=' in initialization.", line_number) 
+                        self.skip_to_next_for_loop()
+                        errors.append(f"❌ Syntax Error on line {line_number}: Expected a value after '=' in initialization.")
+                        return errors  
                     self.next_token()
-                    
             else:
-                raise SyntaxError("❌ Expected an Identifier after the Keyword.", line_number)  
+                self.skip_to_next_for_loop()
+                errors.append(f"❌ Syntax Error on line {line_number}: Expected an Identifier after the Keyword.")
+                return errors  
         elif token["type"] == "IDENTIFIER":
             # Handle without type (e.g., "i = 0;")
             self.next_token()
             token = self.current_token()
         else:
-            raise SyntaxError("❌ Invalid initialization in for loop.", line_number)  
+            self.skip_to_next_for_loop()
+            errors.append(f"❌ Syntax Error on line {line_number}: Invalid initialization in for loop.")
+            return errors  
 
         # Expect semicolon
         token = self.current_token()
         if not token or token["type"] != "SEMI-COLON_DELI":
-            raise SyntaxError("❌ Missing ';' after initialization.", line_number)
+            self.skip_to_next_for_loop()
+            errors.append(f"❌ Syntax Error on line {line_number}: Missing ';' after initialization.")
+            return errors  
         self.next_token()
 
         # === <Condition> ::= <Identifier> <Rel_Op> <Expression> | <Expression> <Logic_Op> <Expression> ===
@@ -189,27 +208,35 @@ class Parser:
         token = self.current_token()
 
         if token["type"] not in ["IDENTIFIER", "INTEGER", "FLOAT"]:
-            raise SyntaxError("❌ Expected a condition expression after initialization.", line_number)
+            self.skip_to_next_for_loop()
+            errors.append(f"❌ Syntax Error on line {line_number}: Expected a condition expression after initialization.")
+            return errors  
 
         condition_expr.append(token["value"])
         self.next_token()
         token = self.current_token()
 
         if token["type"] not in ["EQUAL-REL_OP", "NOT-REL_OP", "GREAT-EQL-REL_OP", "LESS-EQL-REL_OP", "LESS-REL_OP", "GREAT-REL_OP"]:
-            raise SyntaxError("❌ Expected a value after the relational operator.", line_number)
+            self.skip_to_next_for_loop()
+            errors.append(f"❌ Syntax Error on line {line_number}: Expected a relational operator.")
+            return errors 
         condition_expr.append(token["value"])
         self.next_token()
         token = self.current_token()
 
         # Expect another identifier or number after the relational operator
         if token["type"] not in ["IDENTIFIER", "INTEGER", "FLOAT"]:
-            raise SyntaxError("❌ Expected a value after the relational operator.", line_number)
+            self.skip_to_next_for_loop()
+            errors.append(f"❌ Syntax Error on line {line_number}: Expected a value after the relational operator.")
+            return errors 
         condition_expr.append(token["value"])
         self.next_token()
         token = self.current_token()
 
         if not token or token["type"] != "SEMI-COLON_DELI":
-            raise SyntaxError("❌ Missing ';' after condition.", line_number)
+            self.skip_to_next_for_loop()
+            errors.append(f"❌ Syntax Error on line {line_number}: Missing ';' after condition.")
+            return errors  
         self.next_token()  # Move past ';'
 
         # === <Update> ::= <Identifier> <Increment> | <Identifier> <Assign_Op> <Expression> | OPTIONAL: <Update> "," <Update> ===
@@ -217,7 +244,9 @@ class Parser:
         token = self.current_token()
         # Expect an identifier
         if token["type"] != "IDENTIFIER":
-            raise SyntaxError("❌ Expected an identifier at the beginning of the update expression.", line_number)
+            self.skip_to_next_for_loop()
+            errors.append(f"❌ Syntax Error on line {line_number}: Expected an identifier at the beginning of the update expression.")
+            return errors 
         
         self.next_token()
         token = self.current_token()
@@ -234,20 +263,25 @@ class Parser:
 
             # Ensure a valid expression follows (Identifier or Number)
             if not token or token["type"] not in ["IDENTIFIER", "INTEGER", "FLOAT", "DOUBLE"]:
-                raise SyntaxError("❌ Expected a valid expression after assignment operator in update section.", line_number)           
+                self.skip_to_next_for_loop()
+                errors.append(f"❌ Syntax Error on line {line_number}: Expected a valid expression after assignment operator in update section.")
+                return errors            
 
             self.next_token()
             token = self.current_token()
             
         if not token or token["type"] != "CLOSE-PAREN_DELI":
-            raise SyntaxError("❌ Missing ')' after the update statement.", line_number)
+            self.skip_to_next_for_loop()
+            errors.append(f"❌ Syntax Error on line {line_number}: Missing ')' after the update statement.")
+            return errors
         self.next_token()
 
         # === <Body> ::= "{" <Statements> "}" ===
         token = self.current_token()
         if not token or token["type"] != "OPEN-CURL-BRAC_DELI":
             self.skip_to_next_for_loop()
-            raise SyntaxError("❌ Expected '{' after 'for' loop header.", line_number)
+            errors.append(f"❌ Syntax Error on line {line_number}: Expected OPEN BRACKET after 'for' loop header.")
+            return errors
 
         self.next_token()  # Move past '{'
 
@@ -268,4 +302,4 @@ class Parser:
                 print(f"error: {e}")
                 self.skip_to_next_for_loop()
             
-                
+        return errors  # Return collected errors        

@@ -1,9 +1,4 @@
-int num = 3
-
-string name = "RENZO";
-
-for(int i = 3; i > 10; i++) {
+for(int x = 3; i < 10; i++) {
     int num;
 }
 
-int x, y, z;
