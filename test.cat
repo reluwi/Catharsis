@@ -1,7 +1,13 @@
-int num = 3
+int main() {
 
-for(int = 3; i < 10; i++) {
-    int num;
+    char one = "1";
+    char zero = "0";
+
+	if(one == "1") {
+		printf("ON"); }
+	else {
+        printf("help");
+    }
+
+    return 0;
 }
-
-string name = "Renzo"

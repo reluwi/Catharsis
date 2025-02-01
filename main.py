@@ -4,7 +4,7 @@ import string
 import os
 import csv
     
-KEYWORDS = ["int", "float", "double", "char", "bool", "string", "if", "else", "for", "while", "break", "continue", "printf", "scanf"]
+KEYWORDS = ["int", "float", "double", "char", "bool", "string", "if", "else", "for", "while", "break", "continue", "printf", "scanf", "return"]
 RES_WORDS = ["gc", "main", "malloc"]
 NOISE_WORDS = ["boolean" , "integer", "character"] 
 ARITH_OPS = ["*", "/", "%", "^", "#"]
@@ -127,6 +127,8 @@ def process_word(input_text, index, line_number):
             return {"type": "PRINTF_KEY", "value": word_value, "line_number": line_number}, index
         if word_value == "scanf":
             return {"type": "SCANF_KEY", "value": word_value, "line_number": line_number}, index
+        if word_value == "return":
+            return {"type": "RETURN_KEY", "value": word_value, "line_number": line_number}, index
     elif is_res_word(word_value):
         if word_value == "gc":
             return {"type": "GC_KEY", "value": word_value, "line_number": line_number}, index
@@ -300,11 +302,11 @@ def process_quotes(input_text, index, line_number):
         if char == quote_type:
             index += 1  # Move past the closing quote
             if len(content) == 0:
-                return {"type": "EMPTY_STRING", "value": content, "line_number": line_number}, index
+                return {"type": "EMPTY-STRING", "value": content, "line_number": line_number}, index
             if len(content) == 1:
-                return {"type": "CHAR", "value": content, "line_number": line_number}, index
+                return {"type": "CHAR_KEY", "value": content, "line_number": line_number}, index
             else:
-                return {"type": "STRING", "value": content, "line_number": line_number}, index
+                return {"type": "STRING_KEY", "value": content, "line_number": line_number}, index
         
         if char == "\n":
             break
@@ -505,18 +507,12 @@ def main():
                 # Initialize the parser and parse the tokens
                 parser = Parser(tokens_from_csv)
                 errors = []  # Store errors
-
-                while parser.current_token():
-                    token = parser.current_token()
-                    if token["type"] == "FOR_KEY":
-                        result = parser.parse_for_loop()
-                        if result:  # ✅ Ensure result is not None
-                            errors += result
-                    else:
-                        result = parser.parse_declaration()
-                        if result:  # ✅ Ensure result is not None
-                            errors += result
         
+                while parser.current_token():
+                    result = parser.parse_statement()
+                    if result:
+                        errors.extend(result)
+
 
                 # Write errors to CSV file
                 with open(error_filename, mode="w", newline="", encoding="utf-8") as error_file:
