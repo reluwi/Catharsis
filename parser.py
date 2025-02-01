@@ -37,32 +37,38 @@ class Parser:
                 return  
 
             # Stop if a new valid declaration keyword is found (int, float, etc.)
-            if token["type"] in ["INT_KEY", "FLOAT_KEY", "DOUBLE_KEY", "CHAR_KEY", "BOOL_KEY", "STRING_KEY"]: 
+            if token["type"] in ["INT_KEY", "FLOAT_KEY", "DOUBLE_KEY", "CHAR_KEY", "BOOL_KEY", "STRING_KEY", "FOR_KEY"]: 
                 return
 
             self.next_token()  # Skip any other unrecognized tokens
 
     def skip_to_next_for_loop(self):
         """
-        Skips tokens until a closing parenthesis `)` is found, ensuring proper handling inside a `for` loop.
-        Also, if an error happens inside the loop body, it skips until a closing brace `}` is found.
+        Skips tokens until the end of a `for` loop.
+        - First, skips until `)` (closing parenthesis of loop header).
+        - Then, skips until `}` (closing brace of loop body).
         """
         while self.current_token():
             token = self.current_token()
-
-            # Stop at a closing parenthesis - likely end of for-loop header
+            
+            # Stop at closing parenthesis `)` → End of for-loop header
             if token["type"] == "CLOSE-PAREN_DELI":
                 print(f"🔹 Skipping to end of for loop header. Stopping at: {token['value']}")
                 self.next_token()
-                return  
+                break  # ✅ Exit loop after skipping header
+            
+            self.next_token()  # Skip unrecognized tokens in header
 
-            # Stop at a closing brace - likely end of loop body
+        while self.current_token():
+            token = self.current_token()
+
+            # Stop at closing brace `}` → End of loop body
             if token["type"] == "CLOSE-CURL-BRAC_DELI":
                 print(f"🔹 Skipping to end of loop body. Stopping at: {token['value']}")
                 self.next_token()
-                return  
+                return  # ✅ Exit function once loop body is skipped
 
-            self.next_token()  # Skip any other unrecognized tokens
+            self.next_token()  # Skip unrecognized tokens in body
 
     def parse_declaration(self):
         """
@@ -184,7 +190,7 @@ class Parser:
                     self.next_token()
             else:
                 self.skip_to_next_for_loop()
-                errors.append(f"❌ Syntax Error on line {line_number}: Expected an Identifier after the Keyword.")
+                errors.append(f"❌ Syntax Error on line {line_number}: Expected an Identifier after the type.")
                 return errors  
         elif token["type"] == "IDENTIFIER":
             # Handle without type (e.g., "i = 0;")

@@ -1,4 +1,7 @@
-for(int x = 3; i < 10; i++) {
+int num = 3
+
+for(int = 3; i < 10; i++) {
     int num;
 }
 
+string name = "Renzo"
