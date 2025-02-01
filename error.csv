@@ -1,2 +1,4 @@
 Error Message
-No errors found.
+❌ Syntax Error on line 4: Missing semicolon at the end of the declaration.
+"❌ Syntax Error on line 9: Expected an identifier or string after ','."
+Total Errors: 2

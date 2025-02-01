@@ -37,7 +37,8 @@ class Parser:
                 return  
 
             # Stop if a new valid declaration keyword is found (int, float, etc.)
-            if token["type"] in ["INT_KEY", "FLOAT_KEY", "DOUBLE_KEY", "CHAR_KEY", "BOOL_KEY", "STRING_KEY", "FOR_KEY"]: 
+            if token["type"] in ["INT_KEY", "FLOAT_KEY", "DOUBLE_KEY", "CHAR_KEY", "TRUE_BOOL", "FALSE_BOOL", "STRING_KEY", 
+                                "FOR_KEY", "IF_KEY", "ELSE_KEY", "RETURN_KEY", "PRINTF_KEY", "CLOSE-CURL-BRAC_DELI", "RETURN_KEY"]: 
                 return
 
             self.next_token()  # Skip any other unrecognized tokens
@@ -91,7 +92,7 @@ class Parser:
 
             # Stop if a new valid declaration keyword or block end is found
             if token["type"] in ["INT_KEY", "FLOAT_KEY", "DOUBLE_KEY", "CHAR_KEY", "TRUE_BOOL", "FALSE_BOOL", "STRING_KEY", 
-                                "FOR_KEY", "IF_KEY", "ELSE_KEY", "RETURN_KEY", "PRINTF_KEY", "CLOSE-CURL-BRAC_DELI"]: 
+                                "FOR_KEY", "IF_KEY", "ELSE_KEY", "RETURN_KEY", "PRINTF_KEY"]: 
                 return
 
             print(f"⚠ Skipping token: {token['value']} ({token['type']})")  # Debugging
@@ -100,7 +101,8 @@ class Parser:
     def parse_declaration(self):
         """
         Parses a declaration statement (e.g., int x = 5;).
-        """            
+        """      
+        print("sadsd")      
         token = self.current_token()
         if not token:
             return []  # Return empty error list if no token
@@ -173,6 +175,7 @@ class Parser:
         """
         errors = []  # Store errors locally
         token = self.current_token()
+        
         if not token:
             return []  # ✅ Return an empty list if no token
 
@@ -210,7 +213,7 @@ class Parser:
                     self.next_token()
                     token = self.current_token()
 
-                    if not token or token["type"] not in ["INTEGER", "FLOAT", "DOUBLE", "CHAR_KEY", "STRING_KEY"]:
+                    if not token or token["type"] not in ["INTEGER", "FLOAT", "DOUBLE", "CHAR_KEY", "STRING_KEY", "IDENTIFIER"]:
                         self.skip_to_next_for_loop()
                         errors.append(f"❌ Syntax Error on line {line_number}: Expected a value after '=' in initialization.")
                         return errors  
@@ -328,11 +331,11 @@ class Parser:
                 print(f"✅ End of 'for' loop block on line {line_number}")
                 return
             
-            # Handle declarations or statements inside loop body
+             # **Parse statements inside loop body**
             try:
-                self.parse_declaration()
+                errors.extend(self.parse_statement())  # ✅ Process statements inside `{}` correctly
             except SyntaxError as e:
-                print(f"error: {e}")
+                errors.append(str(e))
                 self.skip_to_next_for_loop()
             
         return errors  # Return collected errors        
@@ -350,12 +353,18 @@ class Parser:
    
         line_number = token["line_number"]
 
+         # ✅ Skip single-line comments
+        if token["type"] == "SINGLE_LINE_COMMENT":
+            print(f"📝 Skipping comment on line {line_number}: {token['value']}")
+            self.next_token()  # Move to the next statement
+            return []  # No errors for comments
+
         if token["type"] == "INT_KEY" and self.peek_next_token() and self.peek_next_token()["type"] == "MAIN_KEY":
             result = self.parse_main_function()
             if result:
                 errors.extend(result)
 
-        elif token["type"] in ["INT_KEY", "FLOAT_KEY", "DOUBLE_KEY", "CHAR_KEY", "TRUE_BOOL", "FALSE_BOOL" "STRING_KEY"]:
+        elif token["type"] in ["INT_KEY", "FLOAT_KEY", "DOUBLE_KEY", "CHAR_KEY", "TRUE_BOOL", "FALSE_BOOL", "STRING_KEY"]:
             result = self.parse_declaration()
             if result:
                 errors.extend(result)
@@ -371,6 +380,13 @@ class Parser:
             result = self.parse_if_else()
             if result:
                 errors.extend(result)
+
+        # 🚨 Handle unrecognized function or identifier (`prntf`)
+        elif token["type"] == "IDENTIFIER":
+            errors.append(f"❌ Syntax Error on line {line_number}: Unrecognized function or statement '{token['value']}'.")
+            self.skip_to_next_statement()  # ✅ Skip to avoid redundant errors
+            return errors
+
         else:
             errors.append(f"❌ Syntax Error on line {line_number}: Unexpected statement.")
             self.skip_to_next_statement()
@@ -392,8 +408,10 @@ class Parser:
         if token["type"] == "PRINTF_KEY":
             self.next_token()
             token = self.current_token()
+
             if not token or token["type"] != "OPEN-PAREN_DELI":
                 errors.append(f"❌ Syntax Error on line {line_number}: Expected '(' after 'printf'.")
+                self.next_token()
                 self.skip_to_next_statement()
                 return errors
 
@@ -403,22 +421,40 @@ class Parser:
             # Expect string inside printf
             if not token or token["type"] != "STRING_KEY":
                 errors.append(f"❌ Syntax Error on line {line_number}: Expected a string inside printf.")
+                self.next_token()
                 self.skip_to_next_statement()
                 return errors
             
             self.next_token()  # Move past string
             token = self.current_token()
 
+            # ✅ Allow alternating , IDENTIFIER or STRING
+            while token and token["type"] == "COMMA_DELI":
+                self.next_token()  # Move past `,`
+                token = self.current_token()
+            
+                if not token or token["type"] not in ["IDENTIFIER", "STRING_KEY", "CHAR_KEY"]:
+                    errors.append(f"❌ Syntax Error on line {line_number}: Expected an identifier or string after ','.")
+                    self.next_token()
+                    self.skip_to_next_statement()
+                    return errors
+
+                self.next_token()  # Move past identifier or string
+                token = self.current_token()
+            
+            # ✅ Expect `)` closing parenthesis
             if not token or token["type"] != "CLOSE-PAREN_DELI":
                 errors.append(f"❌ Syntax Error on line {line_number}: Expected ')' after printf arguments.")
+                self.next_token()
                 self.skip_to_next_statement()
                 return errors
-            
+
             self.next_token()  # Move past ')'
             token = self.current_token()
 
             if not token or token["type"] != "SEMI-COLON_DELI":
                 errors.append(f"❌ Syntax Error on line {line_number}: Missing ';' after printf statement.")
+                self.next_token()
                 self.skip_to_next_statement()
                 return errors
 
@@ -432,6 +468,7 @@ class Parser:
 
             if not token or token["type"] not in ["INTEGER", "FLOAT", "IDENTIFIER"]:
                 errors.append(f"❌ Syntax Error on line {line_number}: Expected a return value.")
+                self.next_token()
                 self.skip_to_next_statement()
                 return errors
 
@@ -440,6 +477,7 @@ class Parser:
 
             if not token or token["type"] != "SEMI-COLON_DELI":
                 errors.append(f"❌ Syntax Error on line {line_number}: Missing ';' after return statement.")
+                self.next_token()
                 self.skip_to_next_statement()
                 return errors
 
