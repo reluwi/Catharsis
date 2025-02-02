@@ -1,11 +1,6 @@
-int main () {
-    
-    int a = 5;
-    int b = 3
-    int a = 1;
-    
-    printf("This is a string ", a, ".");
-
-    printf("These are the numbers ", a, b, );
-
-}
+int main() { 
+int x = 0, y = 5, z = 10 
+for (int i = x; i < z; i++) { 
+printf("i = %d\n", i); 
+} 
+return 0; } 

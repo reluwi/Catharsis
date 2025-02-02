@@ -101,8 +101,7 @@ class Parser:
     def parse_declaration(self):
         """
         Parses a declaration statement (e.g., int x = 5;).
-        """      
-        print("sadsd")      
+        """       
         token = self.current_token()
         if not token:
             return []  # Return empty error list if no token
@@ -384,7 +383,7 @@ class Parser:
         # 🚨 Handle unrecognized function or identifier (`prntf`)
         elif token["type"] == "IDENTIFIER":
             errors.append(f"❌ Syntax Error on line {line_number}: Unrecognized function or statement '{token['value']}'.")
-            self.skip_to_next_statement()  # ✅ Skip to avoid redundant errors
+            self.skip_to_next_for_loop() # ✅ Skip to avoid redundant errors
             return errors
 
         else:
