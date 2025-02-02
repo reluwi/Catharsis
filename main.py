@@ -463,7 +463,9 @@ def main():
         # Loop to ask for a valid CSV file to load tokens for parsing
         while True:
             try:
-                parse_filename = input("Enter the name of the CSV file to load tokens for parsing: ").strip()
+                parse_filename = output_filename
+                
+                print(f"{parse_filename} successfuly loaded to parser!")
 
                 # Ensure the file exists
                 if not os.path.isfile(parse_filename):
@@ -513,6 +515,8 @@ def main():
                     if result:
                         errors.extend(result)
 
+                for error in errors:
+                    print(error)
 
                 # Write errors to CSV file
                 with open(error_filename, mode="w", newline="", encoding="utf-8") as error_file:

@@ -33,7 +33,6 @@ class Parser:
 
             # Stop at a semicolon - likely end of a statement
             if token["type"] == "SEMI-COLON_DELI":
-                print(f"🔹 Skipping to next statement. Stopping at: {token['value']}")  # Debugging output
                 self.next_token()
                 return  
 
@@ -55,7 +54,6 @@ class Parser:
             
             # Stop at closing parenthesis `)` → End of for-loop header
             if token["type"] == "CLOSE-PAREN_DELI":
-                print(f"🔹 Skipping to end of for loop header. Stopping at: {token['value']}")
                 self.next_token()
                 break  # ✅ Exit loop after skipping header
             
@@ -66,7 +64,6 @@ class Parser:
 
             # Stop at closing brace `}` → End of loop body
             if token["type"] == "CLOSE-CURL-BRAC_DELI":
-                print(f"🔹 Skipping to end of loop body. Stopping at: {token['value']}")
                 self.next_token()
                 return  # ✅ Exit function once loop body is skipped
 
@@ -82,7 +79,6 @@ class Parser:
 
             # Stop at a semicolon - likely end of a statement
             if token["type"] == "SEMI-COLON_DELI":
-                print(f"🔹 Skipping to next statement. Stopping at: {token['value']}")  # Debugging output
                 self.next_token()
                 return
 
@@ -96,7 +92,6 @@ class Parser:
                                 "FOR_KEY", "IF_KEY", "ELSE_KEY", "RETURN_KEY", "PRINTF_KEY", "SINGLE_LINE_COMMENT"]: 
                 return
 
-            print(f"⚠ Skipping token: {token['value']} ({token['type']})")  # Debugging
             self.next_token()  # Skip unrecognized tokens
 
     def parse_declaration(self):
@@ -116,7 +111,6 @@ class Parser:
             self.skip_to_next_declaration()  # Move past faulty declaration
             return errors
         
-        declaration_type = token["value"]
         self.next_token()
 
         variables = []
@@ -159,12 +153,10 @@ class Parser:
             elif token and token["type"] == "SEMI-COLON_DELI":  
                 break  # End of declaration
             else:
-                errors.append(f"❌ Syntax Error on line {line_number}: Missing semicolon at the end of the declaration.")
+                errors.append(f"❌ Syntax Error on line {line_number}: Missing ';' at the end of the declaration.")
                 self.skip_to_next_declaration()
                 return errors
         
-        identifier_list = ", ".join(variables)
-        print(f"Valid variable declaration: {declaration_type} {identifier_list}; (Line {line_number})")
         self.next_token()  # Move to the next token after semicolon
 
         return errors  # Return collected errors
@@ -329,7 +321,6 @@ class Parser:
             # Stop when we reach '}'
             if token["type"] == "CLOSE-CURL-BRAC_DELI":
                 self.next_token()  # Move past '}'
-                print(f"✅ End of 'for' loop block on line {line_number}")
                 return
             
              # **Parse statements inside loop body**
@@ -382,7 +373,6 @@ class Parser:
 
          # ✅ Skip single-line comments
         if token["type"] == "SINGLE_LINE_COMMENT":
-            print(f"📝 Skipping comment on line {line_number}: {token['value']}")
             self.next_token()  # Move to the next statement
             return []  # No errors for comments
 
@@ -480,7 +470,6 @@ class Parser:
                     return errors
                 self.next_token()
 
-                print(f"Valid function call: printf(\"...\"); (Line {line_number})")
                 return errors
 
             elif function_name == "gc":
@@ -515,7 +504,6 @@ class Parser:
                     # ✅ Stop when reaching `}`
                     if token["type"] == "CLOSE-CURL-BRAC_DELI":
                         self.next_token()
-                        print(f"✅ End of 'gc' function on line {line_number}")
                         return errors
 
                     try:
@@ -548,7 +536,6 @@ class Parser:
                 self.skip_to_next_statement()
                 return errors
 
-            print(f"Valid return statement: return {token['value']}; (Line {line_number})")
             self.next_token()
             return errors
 
@@ -643,8 +630,6 @@ class Parser:
             except SyntaxError as e:
                 errors.append(str(e))
                 self.skip_to_next_statement()
-        
-        print(f"Valid if statement detected on line {line_number}")
 
         # ✅ **Check for `else` statement**
         token = self.current_token()
@@ -732,7 +717,6 @@ class Parser:
             
             if token["type"] == "CLOSE-CURL-BRAC_DELI":
                 self.next_token()  # Move past '}'
-                print(f"Valid main function detected on line {line_number}")
                 return errors  # Exit after closing '}'
 
             try:
@@ -779,5 +763,4 @@ class Parser:
             return errors
 
         self.next_token()  # ✅ Move past `;`
-        print(f"Valid decrement operation on line {line_number}: a--;")
         return errors
